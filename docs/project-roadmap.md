@@ -1,0 +1,1 @@
+3. Begin with documentation and performance optimizations
