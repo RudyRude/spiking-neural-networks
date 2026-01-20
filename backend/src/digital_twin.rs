@@ -5,9 +5,11 @@
 //! plasticity rules, attractors, and liquid state machines from the documentation.
 
 use crate::neuron::iterate_and_spike::{IterateAndSpike, ApproximateNeurotransmitter, ApproximateReceptor, LastFiringTime};
-use crate::graph::{Graph, AdjacencyList};
+use crate::graph::{Graph, AdjacencyList, AdjacencyMatrix};
 use crate::neuron::plasticity::STDP;
 use crate::neuron::integrate_and_fire::IzhikevichNeuron;
+use crate::neuron::{Lattice, SpikeHistory, RunLattice};
+use rand::Rng;
 use std::collections::HashMap;
 
 /// Trait for a brain region module.
@@ -74,6 +76,7 @@ pub struct CorticalModule {
     plasticity: STDP,
     graph: AdjacencyList<(usize, usize), f32>,
     timestep: f32,
+    dopamine: f32, // Neuromodulator
 }
 
 impl CorticalModule {
@@ -90,7 +93,7 @@ impl CorticalModule {
                 }
             }
         }
-        Self { neurons, last_firing_times, plasticity, graph, timestep: 0.0 }
+        Self { neurons, last_firing_times, plasticity, graph, timestep: 0.0, dopamine: 1.0 }
     }
 }
 
@@ -128,17 +131,18 @@ impl BrainRegion for CorticalModule {
     }
 
     fn update_plasticity(&mut self) {
-        // Apply STDP: for each pair, if postsynaptic spiked, update based on timing
+        // Apply R-STDP modulated by dopamine
         for i in 0..self.neurons.len() {
             for j in 0..self.neurons.len() {
                 if i != j {
                     if let Some(weight) = self.graph.get_edge_mut(&(j, i)) {
                         let dt = self.last_firing_times[i] - self.last_firing_times[j];
-                        if dt > 0.0 { // Post after pre
-                            *weight += self.plasticity.a_minus * (-dt).exp();
+                        let delta_w = if dt > 0.0 { // Post after pre
+                            self.plasticity.a_minus * (-dt).exp()
                         } else { // Pre after post
-                            *weight += self.plasticity.a_plus * dt.exp();
-                        }
+                            self.plasticity.a_plus * dt.exp()
+                        };
+                        *weight += delta_w * self.dopamine; // Modulate by dopamine
                     }
                 }
             }
@@ -146,36 +150,144 @@ impl BrainRegion for CorticalModule {
     }
 }
 
-// Placeholder for Hippocampal Module (Ring Attractor).
+// Hippocampal Module with Ring Attractor.
 pub struct HippocampalModule {
-    // Implement ring attractor with Gaussian weights.
+    lattice: Lattice<
+        IzhikevichNeuron<ApproximateNeurotransmitter, ApproximateReceptor>,
+        AdjacencyMatrix<(usize, usize), f32>,
+        SpikeHistory,
+        STDP,
+        ApproximateNeurotransmitter,
+    >,
+    n_neurons: usize,
+    preferred_direction: usize,
+}
+
+impl HippocampalModule {
+    pub fn new(n_neurons: usize, preferred_direction: usize) -> Self {
+        let base_neuron = IzhikevichNeuron::default_impl();
+        let mut lattice = Lattice::default();
+        lattice.populate(&base_neuron, n_neurons, 1).unwrap();
+        // Set up ring connections
+        let ring_distance = |x: isize, y: isize| -> f32 {
+            (x - y).abs().min(n_neurons as isize - (x - y).abs()) as f32
+        };
+        lattice.connect(
+            &(|x, y| x != y),
+            Some(&(|x, y|
+                (-2. * ring_distance(x.0 as isize, y.0 as isize).powf(2.) /
+                (n_neurons as f32 * 10.)).exp() - 0.3)
+            ),
+        ).unwrap();
+        // Random initial voltages
+        lattice.apply(|neuron|
+            neuron.current_voltage = rand::thread_rng().gen_range(neuron.v_init..=neuron.v_th)
+        );
+        lattice.update_grid_history = true;
+        Self { lattice, n_neurons, preferred_direction }
+    }
 }
 
 impl BrainRegion for HippocampalModule {
     fn iterate(&mut self, inputs: &[Vec<f32>]) -> Vec<f32> {
-        vec![] // Placeholder
+        // Apply input to preferred direction
+        if let Some(input_vec) = inputs.get(0) {
+            if let Some(input) = input_vec.get(0) {
+                // Input to preferred direction neuron
+                if let Some(neuron) = self.lattice.get_mut(self.preferred_direction, 0) {
+                    neuron.current_voltage += input;
+                }
+            }
+        }
+        // Run one step
+        self.lattice.iterate().unwrap();
+        // Return firing rates (simplified)
+        vec![0.0; self.n_neurons] // Placeholder for actual rates
     }
 
     fn get_outputs(&self) -> Vec<f32> {
-        vec![] // Placeholder
+        // Aggregate firing rates
+        let firing_rates = self.lattice.grid_history.aggregate();
+        firing_rates.iter().map(|row| row[0] as f32).collect()
     }
 
-    fn update_plasticity(&mut self) {}
+    fn update_plasticity(&mut self) {
+        // No plasticity for attractor
+    }
 }
 
-// Placeholder for LSM Module.
+// LSM Module with reservoir and readout.
 pub struct LsmModule {
-    // Reservoir with readout.
+    reservoir: Lattice<
+        IzhikevichNeuron<ApproximateNeurotransmitter, ApproximateReceptor>,
+        AdjacencyMatrix<(usize, usize), f32>,
+        SpikeHistory,
+        STDP,
+        ApproximateNeurotransmitter,
+    >,
+    readout: Vec<f32>, // Simple readout weights
+    output: f32,
+}
+
+impl LsmModule {
+    pub fn new(reservoir_size: usize) -> Self {
+        let base_neuron = IzhikevichNeuron::default_impl();
+        let mut reservoir = Lattice::default();
+        reservoir.populate(&base_neuron, reservoir_size, 1).unwrap();
+        // Random recurrent connections
+        reservoir.connect(
+            &(|x, y| x != y && rand::thread_rng().gen_bool(0.1)), // 10% connectivity
+            Some(&(|_, _| rand::thread_rng().gen_range(-1.0..1.0))),
+        ).unwrap();
+        reservoir.update_grid_history = true;
+        let readout = vec![0.0; reservoir_size]; // Initialize to zero
+        Self { reservoir, readout, output: 0.0 }
+    }
 }
 
 impl BrainRegion for LsmModule {
     fn iterate(&mut self, inputs: &[Vec<f32>]) -> Vec<f32> {
-        vec![] // Placeholder
+        // Apply inputs to reservoir
+        if let Some(input_vec) = inputs.get(0) {
+            for (i, &input) in input_vec.iter().enumerate() {
+                if let Some(neuron) = self.reservoir.get_mut(i, 0) {
+                    neuron.current_voltage += input;
+                }
+            }
+        }
+        // Iterate reservoir
+        self.reservoir.iterate().unwrap();
+        // Compute readout
+        let firing_rates = self.reservoir.grid_history.aggregate();
+        self.output = firing_rates.iter().zip(&self.readout).map(|(rate, &weight)| rate[0] as f32 * weight).sum();
+        vec![self.output]
     }
 
     fn get_outputs(&self) -> Vec<f32> {
-        vec![] // Placeholder
+        vec![self.output]
     }
 
-    fn update_plasticity(&mut self) {}
+    fn update_plasticity(&mut self) {
+        // Simple R-STDP like update (placeholder)
+        // For simplicity, no update
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_digital_twin() {
+        let mut twin = DigitalTwin::new();
+        let cortical = CorticalModule::new(5);
+        let hippocampal = HippocampalModule::new(10, 5);
+        twin.add_region("cortical".to_string(), Box::new(cortical));
+        twin.add_region("hippocampal".to_string(), Box::new(hippocampal));
+        for _ in 0..10 {
+            twin.iterate();
+        }
+        // Basic test that it runs without panic
+        assert!(true);
+    }
 }
