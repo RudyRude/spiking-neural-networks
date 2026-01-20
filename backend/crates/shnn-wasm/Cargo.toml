@@ -17,7 +17,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 # Core SHNN functionality
-shnn-core = { version = "0.1.0", path = "../shnn-core", default-features = false }
+ndfh-core = { version = "0.2.0", path = "../ndfh-core", default-features = false }
 
 # WASM-specific dependencies
 wasm-bindgen = "0.2.89"
@@ -103,17 +103,3 @@ wasm-opt = ["-Oz", "--enable-mutable-globals"]
 [package.metadata.wasm-pack.profile.dev]
 # Enable debugging features in development
 wasm-opt = false
-
-[[example]]
-name = "basic_network"
-path = "examples/basic_network.rs"
-
-[[example]]
-name = "real_time_visualization"
-path = "examples/real_time_visualization.rs"
-required-features = ["audio", "webgl"]
-
-[[example]]
-name = "web_worker_processing"
-path = "examples/web_worker_processing.rs"
-required-features = ["workers"]

@@ -6,7 +6,7 @@
 use shnn_serialize::{
     Serialize, Deserialize, BinaryEncoder, BinaryDecoder,
     Buffer, BufferMut, ZeroCopyBuffer,
-    endian::{LittleEndian, BigEndian, NetworkEndian},
+    endian::{Endianness, EndianConverter},
     utils::{calculate_size, align_to, padding_needed},
     neural::{SpikeEvent, WeightMatrix, LayerState, NeuralSerializer},
 };
@@ -132,21 +132,36 @@ fn test_struct_serialization() {
 #[test]
 fn test_endianness() {
     let value = 0x12345678u32;
-    
-    // Test little endian
-    let le_bytes = LittleEndian::to_bytes(value);
-    assert_eq!(le_bytes, [0x78, 0x56, 0x34, 0x12]);
-    assert_eq!(LittleEndian::from_bytes(le_bytes), value);
-    
-    // Test big endian
-    let be_bytes = BigEndian::to_bytes(value);
-    assert_eq!(be_bytes, [0x12, 0x34, 0x56, 0x78]);
-    assert_eq!(BigEndian::from_bytes(be_bytes), value);
-    
+
+    // Test little endian converter
+    let le_converter = EndianConverter::little_endian();
+    let mut le_buffer = [0u8; 4];
+    le_converter.write_u32(value, &mut le_buffer).unwrap();
+    assert_eq!(le_buffer, [0x78, 0x56, 0x34, 0x12]);
+    let le_read = le_converter.read_u32(&le_buffer).unwrap();
+    assert_eq!(le_read, value);
+
+    // Test big endian converter
+    let be_converter = EndianConverter::big_endian();
+    let mut be_buffer = [0u8; 4];
+    be_converter.write_u32(value, &mut be_buffer).unwrap();
+    assert_eq!(be_buffer, [0x12, 0x34, 0x56, 0x78]);
+    let be_read = be_converter.read_u32(&be_buffer).unwrap();
+    assert_eq!(be_read, value);
+
     // Test network endian (should be same as big endian)
-    let ne_bytes = NetworkEndian::to_bytes(value);
-    assert_eq!(ne_bytes, be_bytes);
-    assert_eq!(NetworkEndian::from_bytes(ne_bytes), value);
+    let mut ne_buffer = [0u8; 4];
+    endian::network::write_u32(value, &mut ne_buffer).unwrap();
+    assert_eq!(ne_buffer, be_buffer);
+    let ne_read = endian::network::read_u32(&ne_buffer).unwrap();
+    assert_eq!(ne_read, value);
+
+    // Test float conversion
+    let float_value = 3.14159f32;
+    let mut float_buffer = [0u8; 4];
+    le_converter.write_f32(float_value, &mut float_buffer).unwrap();
+    let float_read = le_converter.read_f32(&float_buffer).unwrap();
+    assert!((float_value - float_read).abs() < 1e-6);
 }
 
 /// Test zero-copy buffer operations

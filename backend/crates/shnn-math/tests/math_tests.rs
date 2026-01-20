@@ -6,8 +6,10 @@
 use shnn_math::{
     Vector, Matrix, SparseMatrix,
     activation::{sigmoid, tanh, relu, leaky_relu, softmax},
-    math::{FloatMath, exp_approx, ln_approx, sqrt_approx, sin_approx, cos_approx, safe_divide},
-    linalg::{dot_product, matrix_multiply, vector_add, vector_subtract, vector_scale},
+    math::{FloatMath, exp_approx, ln_approx, sqrt_approx, sin_approx, cos_approx},
+    approx::safe_divide,
+    vector::{dot_product, vector_add, vector_sub, vector_scale},
+    matrix::matrix_multiply,
     stats::{mean, variance, standard_deviation, correlation},
 };
 use std::f32::consts::PI;
@@ -21,19 +23,23 @@ fn test_vector_operations() {
     let v2 = Vector::from_slice(&[4.0, 5.0, 6.0]);
     
     // Test vector addition
-    let sum = vector_add(&v1, &v2);
-    assert_eq!(sum.data(), &[5.0, 7.0, 9.0]);
-    
+    let mut sum = vec![0.0; 3];
+    vector_add(v1.data(), v2.data(), &mut sum).unwrap();
+    assert_eq!(sum, &[5.0, 7.0, 9.0]);
+
     // Test vector subtraction
-    let diff = vector_subtract(&v2, &v1);
-    assert_eq!(diff.data(), &[3.0, 3.0, 3.0]);
-    
+    let mut diff = vec![0.0; 3];
+    vector_sub(v2.data(), v1.data(), &mut diff).unwrap();
+    assert_eq!(diff, &[3.0, 3.0, 3.0]);
+
     // Test vector scaling
-    let scaled = vector_scale(&v1, 2.0);
-    assert_eq!(scaled.data(), &[2.0, 4.0, 6.0]);
-    
+    let mut scaled = vec![0.0; 3];
+    scaled.copy_from_slice(v1.data());
+    vector_scale(&mut scaled, 2.0);
+    assert_eq!(scaled, &[2.0, 4.0, 6.0]);
+
     // Test dot product
-    let dot = dot_product(&v1, &v2);
+    let dot = dot_product(v1.data(), v2.data()).unwrap();
     assert_eq!(dot, 32.0); // 1*4 + 2*5 + 3*6 = 4 + 10 + 18 = 32
 }
 
@@ -44,17 +50,17 @@ fn test_vector_creation() {
     let zeros = Vector::zeros(5);
     assert_eq!(zeros.len(), 5);
     assert!(zeros.data().iter().all(|&x| x == 0.0));
-    
+
     // Test ones
     let ones = Vector::ones(3);
     assert_eq!(ones.len(), 3);
     assert!(ones.data().iter().all(|&x| x == 1.0));
-    
+
     // Test filled
-    let filled = Vector::filled(4, 2.5);
+    let filled = Vector::from_vec(vec![2.5; 4]);
     assert_eq!(filled.len(), 4);
     assert!(filled.data().iter().all(|&x| x == 2.5));
-    
+
     // Test from slice
     let from_slice = Vector::from_slice(&[1.0, 2.0, 3.0]);
     assert_eq!(from_slice.len(), 3);
@@ -64,26 +70,26 @@ fn test_vector_creation() {
 /// Test matrix operations
 #[test]
 fn test_matrix_operations() {
-    let m1 = Matrix::from_rows(&[
-        &[1.0, 2.0],
-        &[3.0, 4.0],
-    ]);
-    
-    let m2 = Matrix::from_rows(&[
-        &[5.0, 6.0],
-        &[7.0, 8.0],
-    ]);
+    let m1 = Matrix::from_nested_vec(vec![
+        vec![1.0, 2.0],
+        vec![3.0, 4.0],
+    ]).unwrap();
+
+    let m2 = Matrix::from_nested_vec(vec![
+        vec![5.0, 6.0],
+        vec![7.0, 8.0],
+    ]).unwrap();
     
     // Test matrix multiplication
-    let product = matrix_multiply(&m1, &m2);
+    let product = matrix_multiply(&m1, &m2).unwrap();
     // [1 2] [5 6]   [1*5+2*7  1*6+2*8]   [19 22]
     // [3 4] [7 8] = [3*5+4*7  3*6+4*8] = [43 50]
     assert_eq!(product.rows(), 2);
     assert_eq!(product.cols(), 2);
-    assert!((product.get(0, 0) - 19.0).abs() < EPSILON);
-    assert!((product.get(0, 1) - 22.0).abs() < EPSILON);
-    assert!((product.get(1, 0) - 43.0).abs() < EPSILON);
-    assert!((product.get(1, 1) - 50.0).abs() < EPSILON);
+    assert!((product.get(0, 0).unwrap() - 19.0).abs() < EPSILON);
+    assert!((product.get(0, 1).unwrap() - 22.0).abs() < EPSILON);
+    assert!((product.get(1, 0).unwrap() - 43.0).abs() < EPSILON);
+    assert!((product.get(1, 1).unwrap() - 50.0).abs() < EPSILON);
 }
 
 /// Test matrix creation and properties
@@ -95,10 +101,10 @@ fn test_matrix_creation() {
     assert_eq!(zeros.cols(), 4);
     for i in 0..3 {
         for j in 0..4 {
-            assert_eq!(zeros.get(i, j), 0.0);
+            assert_eq!(zeros.get(i, j).unwrap(), 0.0);
         }
     }
-    
+
     // Test identity
     let identity = Matrix::identity(3);
     assert_eq!(identity.rows(), 3);
@@ -106,20 +112,21 @@ fn test_matrix_creation() {
     for i in 0..3 {
         for j in 0..3 {
             if i == j {
-                assert_eq!(identity.get(i, j), 1.0);
+                assert_eq!(identity.get(i, j).unwrap(), 1.0);
             } else {
-                assert_eq!(identity.get(i, j), 0.0);
+                assert_eq!(identity.get(i, j).unwrap(), 0.0);
             }
         }
     }
-    
+
     // Test filled
-    let filled = Matrix::filled(2, 3, 5.0);
+    let mut filled = Matrix::zeros(2, 3);
+    filled.fill(5.0);
     assert_eq!(filled.rows(), 2);
     assert_eq!(filled.cols(), 3);
     for i in 0..2 {
         for j in 0..3 {
-            assert_eq!(filled.get(i, j), 5.0);
+            assert_eq!(filled.get(i, j).unwrap(), 5.0);
         }
     }
 }
@@ -128,25 +135,26 @@ fn test_matrix_creation() {
 #[test]
 fn test_sparse_matrix() {
     let mut sparse = SparseMatrix::new(3, 3);
-    
+
     // Set some values
     sparse.set(0, 0, 1.0);
     sparse.set(1, 2, 2.0);
     sparse.set(2, 1, 3.0);
-    
+
     // Test get
-    assert_eq!(sparse.get(0, 0), 1.0);
-    assert_eq!(sparse.get(1, 2), 2.0);
-    assert_eq!(sparse.get(2, 1), 3.0);
-    assert_eq!(sparse.get(0, 1), 0.0); // Default value
-    
+    assert_eq!(sparse.get(0, 0).unwrap(), 1.0);
+    assert_eq!(sparse.get(1, 2).unwrap(), 2.0);
+    assert_eq!(sparse.get(2, 1).unwrap(), 3.0);
+    assert_eq!(sparse.get(0, 1).unwrap(), 0.0); // Default value
+
     // Test nnz (number of non-zeros)
     assert_eq!(sparse.nnz(), 3);
-    
+
     // Test with capacity
     let sparse_with_cap = SparseMatrix::with_capacity(4, 4, 10);
-    assert_eq!(sparse_with_cap.rows(), 4);
-    assert_eq!(sparse_with_cap.cols(), 4);
+    let (rows, cols) = sparse_with_cap.shape();
+    assert_eq!(rows, 4);
+    assert_eq!(cols, 4);
     assert_eq!(sparse_with_cap.nnz(), 0);
 }
 
@@ -171,27 +179,27 @@ fn test_activation_functions() {
     assert_eq!(relu(0.0), 0.0);
     
     // Test Leaky ReLU
-    assert_eq!(leaky_relu(2.0, 0.1), 2.0);
-    assert!((leaky_relu(-1.0, 0.1) - (-0.1)).abs() < EPSILON);
-    assert_eq!(leaky_relu(0.0, 0.1), 0.0);
+    assert_eq!(leaky_relu(2.0), 2.0);
+    assert!((leaky_relu(-1.0) - (-0.01)).abs() < EPSILON);
+    assert_eq!(leaky_relu(0.0), 0.0);
 }
 
 /// Test softmax function
 #[test]
 fn test_softmax() {
-    let input = vec![1.0, 2.0, 3.0];
-    let result = softmax(&input);
-    
+    let mut input = vec![1.0, 2.0, 3.0];
+    softmax(&mut input);
+
     // Softmax should sum to 1
-    let sum: f32 = result.iter().sum();
+    let sum: f32 = input.iter().sum();
     assert!((sum - 1.0).abs() < EPSILON);
-    
+
     // All values should be positive
-    assert!(result.iter().all(|&x| x > 0.0));
-    
+    assert!(input.iter().all(|&x| x > 0.0));
+
     // Larger inputs should have larger outputs
-    assert!(result[2] > result[1]);
-    assert!(result[1] > result[0]);
+    assert!(input[2] > input[1]);
+    assert!(input[1] > input[0]);
 }
 
 /// Test math approximation functions
@@ -293,13 +301,13 @@ fn test_statistics() {
 fn test_correlation() {
     let x = vec![1.0, 2.0, 3.0, 4.0, 5.0];
     let y = vec![2.0, 4.0, 6.0, 8.0, 10.0]; // Perfect positive correlation
-    
-    let corr = correlation(&x, &y);
+
+    let corr = correlation(&x, &y).unwrap();
     assert!((corr - 1.0).abs() < EPSILON, "Perfect positive correlation should be 1.0, got {}", corr);
-    
+
     // Test negative correlation
     let y_neg = vec![10.0, 8.0, 6.0, 4.0, 2.0];
-    let corr_neg = correlation(&x, &y_neg);
+    let corr_neg = correlation(&x, &y_neg).unwrap();
     assert!((corr_neg - (-1.0)).abs() < EPSILON, "Perfect negative correlation should be -1.0, got {}", corr_neg);
 }
 
@@ -365,40 +373,40 @@ fn test_approximation_performance() {
 /// Test matrix-vector multiplication
 #[test]
 fn test_matrix_vector_multiply() {
-    let matrix = Matrix::from_rows(&[
-        &[1.0, 2.0, 3.0],
-        &[4.0, 5.0, 6.0],
-    ]);
-    
+    let matrix = Matrix::from_nested_vec(vec![
+        vec![1.0, 2.0, 3.0],
+        vec![4.0, 5.0, 6.0],
+    ]).unwrap();
+
     let vector = Vector::from_slice(&[1.0, 2.0, 3.0]);
-    
+
     // Matrix-vector multiplication: [2x3] * [3x1] = [2x1]
-    let result = matrix.multiply_vector(&vector);
-    
+    let result = matrix.multiply_vector(vector.data()).unwrap();
+
     // [1 2 3] [1]   [1*1 + 2*2 + 3*3]   [14]
     // [4 5 6] [2] = [4*1 + 5*2 + 6*3] = [32]
     //         [3]
-    
+
     assert_eq!(result.len(), 2);
-    assert!((result.data()[0] - 14.0).abs() < EPSILON);
-    assert!((result.data()[1] - 32.0).abs() < EPSILON);
+    assert!((result[0] - 14.0).abs() < EPSILON);
+    assert!((result[1] - 32.0).abs() < EPSILON);
 }
 
 /// Test sparse matrix operations
 #[test]
 fn test_sparse_matrix_operations() {
     let mut sparse = SparseMatrix::new(1000, 1000);
-    
+
     // Set some scattered values
     sparse.set(0, 999, 1.0);
     sparse.set(500, 500, 2.0);
     sparse.set(999, 0, 3.0);
-    
+
     assert_eq!(sparse.nnz(), 3);
-    assert_eq!(sparse.get(0, 999), 1.0);
-    assert_eq!(sparse.get(500, 500), 2.0);
-    assert_eq!(sparse.get(999, 0), 3.0);
-    assert_eq!(sparse.get(100, 100), 0.0);
+    assert_eq!(sparse.get(0, 999).unwrap(), 1.0);
+    assert_eq!(sparse.get(500, 500).unwrap(), 2.0);
+    assert_eq!(sparse.get(999, 0).unwrap(), 3.0);
+    assert_eq!(sparse.get(100, 100).unwrap(), 0.0);
 }
 
 /// Test numerical precision and accuracy
