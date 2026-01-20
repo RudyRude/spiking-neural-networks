@@ -5,6 +5,7 @@ YYYY-MM-DD HH:MM:SS - Log of updates made.
 *
 
 [2026-01-20 11:01:30] - Added integration tests for release: Python CPU interface tests in interface/tests/, CLI integration tests in ndfh-cli, end-to-end experiment tests, and error handling tests.
+[2026-01-20 20:55:49] - Added comprehensive project documentation to docs/spiking-neural-networks.md covering biological neuron models, implementation details, and research directions.
 
 ## Completed Tasks
 
