@@ -7,12 +7,23 @@ YYYY-MM-DD HH:MM:SS - Log of updates made will be appended as footnotes to the e
 
 ## Project Goal
 
-*   
+* Build a comprehensive spiking neural network (SNN) system for simulating brain-like computation, from individual neurons to cognitive tasks, with biological accuracy and applications in AI, neuroscience research, and pathology modeling.
 
 ## Key Features
 
-*   
+* Biological neuron models: Integrate-and-fire, Izhikevich, Hodgkin-Huxley with neurotransmission
+* Plasticity and learning: STDP, R-STDP, neuromodulated learning
+* Advanced architectures: Attractors, liquid state machines, Hopfield networks
+* Digital twin brain simulation: Modular regions with inter-connectivity
+* Applications: Classifiers, cognitive tasks (navigation, memory), pathology modeling
+* Tools: EEG processing, Python bindings, benchmarking suite
+* Performance: GPU acceleration, parallel processing, optimized memory usage   
 
 ## Overall Architecture
 
-*
+* Modular digital twin with BrainRegion traits for brain modules (cortex, hippocampus, LSM)
+* Hierarchical SNN system: neurons -> lattices -> networks -> brain regions
+* Support for biological models: integrate-and-fire, Izhikevich, Hodgkin-Huxley
+* Plasticity and learning: STDP, R-STDP, neuromodulation
+* Applications: classifiers, attractors, LSM-based cognition, EEG processing
+* Roadmap: See docs/project-roadmap.md for phased development plan

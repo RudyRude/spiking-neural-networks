@@ -1,0 +1,14 @@
+/Users/mpro/august/spiking-neural-networks/backend/target/debug/deps/pyo3_build_config-c9b639a34399c9ca.d: /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.20.3/src/lib.rs /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.20.3/src/errors.rs /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.20.3/src/impl_.rs /Users/mpro/august/spiking-neural-networks/backend/target/debug/build/pyo3-build-config-647b5e1ed9fa535f/out/pyo3-build-config-file.txt /Users/mpro/august/spiking-neural-networks/backend/target/debug/build/pyo3-build-config-647b5e1ed9fa535f/out/pyo3-build-config.txt
+
+/Users/mpro/august/spiking-neural-networks/backend/target/debug/deps/libpyo3_build_config-c9b639a34399c9ca.rlib: /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.20.3/src/lib.rs /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.20.3/src/errors.rs /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.20.3/src/impl_.rs /Users/mpro/august/spiking-neural-networks/backend/target/debug/build/pyo3-build-config-647b5e1ed9fa535f/out/pyo3-build-config-file.txt /Users/mpro/august/spiking-neural-networks/backend/target/debug/build/pyo3-build-config-647b5e1ed9fa535f/out/pyo3-build-config.txt
+
+/Users/mpro/august/spiking-neural-networks/backend/target/debug/deps/libpyo3_build_config-c9b639a34399c9ca.rmeta: /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.20.3/src/lib.rs /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.20.3/src/errors.rs /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.20.3/src/impl_.rs /Users/mpro/august/spiking-neural-networks/backend/target/debug/build/pyo3-build-config-647b5e1ed9fa535f/out/pyo3-build-config-file.txt /Users/mpro/august/spiking-neural-networks/backend/target/debug/build/pyo3-build-config-647b5e1ed9fa535f/out/pyo3-build-config.txt
+
+/Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.20.3/src/lib.rs:
+/Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.20.3/src/errors.rs:
+/Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.20.3/src/impl_.rs:
+/Users/mpro/august/spiking-neural-networks/backend/target/debug/build/pyo3-build-config-647b5e1ed9fa535f/out/pyo3-build-config-file.txt:
+/Users/mpro/august/spiking-neural-networks/backend/target/debug/build/pyo3-build-config-647b5e1ed9fa535f/out/pyo3-build-config.txt:
+
+# env-dep:CARGO_PKG_VERSION=0.20.3
+# env-dep:OUT_DIR=/Users/mpro/august/spiking-neural-networks/backend/target/debug/build/pyo3-build-config-647b5e1ed9fa535f/out

@@ -8,6 +8,7 @@ YYYY-MM-DD HH:MM:SS - Log of updates made.
 [2026-01-20 20:55:49] - Added comprehensive project documentation to docs/spiking-neural-networks.md covering biological neuron models, implementation details, and research directions.
 [2026-01-20 21:00:48] - Started digital twin prototype in Rust with modular BrainRegion trait, DigitalTwin orchestrator, and CorticalModule using Izhikevich neurons and STDP.
 [2026-01-20 21:05:08] - Completed digital twin prototype with BrainRegion trait, DigitalTwin orchestrator, CorticalModule (Izhikevich + R-STDP), HippocampalModule (ring attractor), LsmModule (reservoir + readout), neuromodulation, and test integration.
+[2026-01-20 21:24:09] - Created comprehensive project roadmap in docs/project-roadmap.md, categorizing all TODOs from documentation into phased development plan with priorities, dependencies, and milestones.
 
 ## Completed Tasks
 

@@ -1,0 +1,6 @@
+/Users/mpro/august/spiking-neural-networks/backend/target/debug/deps/slab-81429efa98c76ab4.d: /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/slab-0.4.11/src/lib.rs /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/slab-0.4.11/src/builder.rs
+
+/Users/mpro/august/spiking-neural-networks/backend/target/debug/deps/libslab-81429efa98c76ab4.rmeta: /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/slab-0.4.11/src/lib.rs /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/slab-0.4.11/src/builder.rs
+
+/Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/slab-0.4.11/src/lib.rs:
+/Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/slab-0.4.11/src/builder.rs:
