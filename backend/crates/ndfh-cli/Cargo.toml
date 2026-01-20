@@ -1,0 +1,28 @@
+[package]
+name = "ndfh-cli"
+version = "0.2.0"
+edition = "2021"
+description = "NDF-H CLI (convert, verify, eval, inspect) — skeleton"
+license = "MIT OR Apache-2.0"
+
+[features]
+default = []
+# Forward the dependency feature so `cargo run -p ndfh-cli --features schema-validate` enables JSON Schema validation
+schema-validate = ["ndfh-hdx/schema-validate"]
+
+[dependencies]
+clap = { version = "4.5", features = ["derive"] }
+anyhow = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.9"
+serde_json = "1.0"
+chrono = "0.4"
+ndfh-hdx = { path = "../ndfh-hdx" }
+ndfh-api = { path = "../ndfh-api" }
+ndfh-hgts = { path = "../ndfh-hgts" }
+ndfh-core = { path = "../ndfh-core" }
+
+[dev-dependencies]
+assert_cmd = "2"
+tempfile = "3"
+serde_json = "1"

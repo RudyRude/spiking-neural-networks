@@ -1,0 +1,34 @@
+[package]
+name = "ndfh-api"
+version = "0.2.0"
+edition = "2021"
+description = "NDF-H API skeleton (procedural server traits)"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+ndfh-core = { path = "../ndfh-core" }
+ndfh-hgts = { path = "../ndfh-hgts" }
+
+# Observability
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Optional OpenTelemetry wiring, enabled via the "otel-stdout" or "otlp" features
+opentelemetry = { version = "0.20", features = ["rt-tokio"], optional = true }
+opentelemetry_sdk = { version = "0.20", features = ["rt-tokio-current-thread"], optional = true }
+tracing-opentelemetry = { version = "0.21", optional = true }
+# OTLP exporter (gRPC)
+opentelemetry-otlp = { version = "0.13", optional = true, default-features = false, features = ["grpc-tonic"] }
+# opentelemetry-otlp can be enabled later for real OTLP exporters
+# opentelemetry-otlp = { version = "0.13", optional = true, default-features = false, features = ["grpc-tonic"] }
+
+thiserror = "1.0"
+anyhow = "1.0"
+
+[features]
+default = []
+otel-stdout = ["dep:opentelemetry", "dep:opentelemetry_sdk", "dep:tracing-opentelemetry"]
+# Future: add OTLP feature when needed (left commented to avoid pulling heavy deps by default)
+# otlp = ["dep:opentelemetry", "dep:opentelemetry_sdk", "dep:tracing-opentelemetry", "dep:opentelemetry-otlp"]
+# Future: add an OTLP feature for real backends (left commented to avoid pulling heavy deps by default)
+# otlp = ["dep:opentelemetry", "dep:opentelemetry_sdk", "dep:tracing-opentelemetry", "dep:opentelemetry-otlp"]

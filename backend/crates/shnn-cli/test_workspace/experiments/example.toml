@@ -1,0 +1,17 @@
+# Example SNN Training Experiment
+[experiment]
+name = "basic_classification"
+description = "Basic 3-layer classification network"
+
+[network]
+inputs = 10
+hidden = 50  
+outputs = 5
+topology = "fully-connected"
+
+[training]
+steps = 20000
+stimulus = "poisson"
+stimulus_rate = 20.0
+record_spikes = true
+record_potentials = false

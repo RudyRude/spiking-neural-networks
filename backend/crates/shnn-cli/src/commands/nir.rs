@@ -1,0 +1,505 @@
+//! NIR-focused commands: compile (build textual NIR), run (from NIR - stub),
+//! and op listing (dialects/ops/versions).
+
+use clap::{Args, Subcommand, ValueEnum};
+use std::path::PathBuf;
+use tracing::info;
+use std::fs;
+use shnn_storage::{vevt::{VEVTEvent, encode_vevt}, StreamId, Time as StorageTime};
+
+use crate::error::{CliError, CliResult};
+
+use shnn_ir::{
+    Module, parse_text,
+    lif_neuron_v1, stdp_rule_v1, layer_fully_connected_v1,
+    stimulus_poisson_v1, runtime_simulate_run_v1,
+};
+
+use shnn_compiler::{compile_with_passes, verify_module, list_ops};
+
+/// NIR-related commands
+#[derive(Args, Debug)]
+pub struct NirCommand {
+    #[command(subcommand)]
+    pub sub: NirSubcommand,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum NirSubcommand {
+    /// Build textual NIR from CLI parameters (no execution)
+    Compile(NirCompile),
+    /// Run from textual NIR (stub until parser lands)
+    Run(NirRun),
+    /// List available ops and versions
+    OpList(NirOpList),
+    /// Verify textual NIR file
+    Verify(NirVerify),
+}
+
+/// Compile CLI params to textual NIR (.nirt), without executing
+#[derive(Args, Debug)]
+pub struct NirCompile {
+    /// Output NIR file path (.nirt)
+    #[arg(short, long)]
+    pub output: PathBuf,
+
+    /// Neuron model
+    #[arg(long, default_value = "lif")]
+    pub neurons: NeuronType,
+
+    /// Plasticity
+    #[arg(long, default_value = "stdp")]
+    pub plasticity: PlasticityType,
+
+    /// Inputs/hidden/outputs
+    #[arg(long, default_value = "10")]
+    pub inputs: u32,
+    #[arg(long, default_value = "50")]
+    pub hidden: u32,
+    #[arg(long, default_value = "5")]
+    pub outputs: u32,
+
+    /// Topology
+    #[arg(long, default_value = "fully-connected")]
+    pub topology: TopologyType,
+
+    /// Simulation control
+    #[arg(long, default_value = "10000")]
+    pub steps: u64,
+    #[arg(long, default_value = "100")]
+    pub dt_us: u64,
+
+    /// Stimulus control
+    #[arg(long, default_value = "poisson")]
+    pub stimulus: StimulusType,
+    #[arg(long, default_value = "20.0")]
+    pub stimulus_rate: f32,
+
+    /// Record potentials
+    #[arg(long)]
+    pub record_potentials: bool,
+
+    /// Random seed
+    #[arg(long)]
+    pub seed: Option<u64>,
+}
+
+/// Run from textual NIR
+#[derive(Args, Debug)]
+pub struct NirRun {
+    /// Input textual NIR file (.nirt)
+    pub input: PathBuf,
+
+    /// Output file (JSON or VEVT depending on --spikes-format)
+    #[arg(short, long)]
+    pub output: Option<PathBuf>,
+
+    /// Spikes export format
+    #[arg(long, value_enum, default_value = "json")]
+    pub spikes_format: SpikesFormat,
+}
+
+/// List available ops and versions
+#[derive(Args, Debug)]
+pub struct NirOpList {
+    /// Show detailed attribute hints
+    #[arg(long)]
+    pub detailed: bool,
+}
+
+#[derive(ValueEnum, Clone, Debug)]
+pub enum NeuronType {
+    Lif,
+}
+#[derive(ValueEnum, Clone, Debug)]
+pub enum PlasticityType {
+    Stdp,
+    None,
+}
+#[derive(ValueEnum, Clone, Debug)]
+pub enum TopologyType {
+    FullyConnected,
+    Random,
+    Custom,
+}
+#[derive(ValueEnum, Clone, Debug)]
+pub enum StimulusType {
+    Poisson,
+    Custom,
+}
+
+#[derive(ValueEnum, Clone, Debug)]
+pub enum SpikesFormat {
+    Json,
+    Vevt,
+    GraphML,
+    LPGJson,
+    RDFNQuads,
+}
+
+impl NirCommand {
+    pub async fn execute(self) -> CliResult<()> {
+        match self.sub {
+            NirSubcommand::Compile(cmd) => cmd.execute().await,
+            NirSubcommand::Run(cmd) => cmd.execute().await,
+            NirSubcommand::OpList(cmd) => cmd.execute().await,
+            NirSubcommand::Verify(cmd) => cmd.execute().await,
+        }
+    }
+}
+
+impl NirCompile {
+    pub async fn execute(self) -> CliResult<()> {
+        // Build NIR module from CLI params (mirrors train->NIR logic)
+        let mut module = Module::new();
+
+        // lif.neuron@v1 defaults (basic LIF; parameters can be lifted later via config)
+        // Conservative defaults copied from runtime defaults
+        let lif_tau_m = 20.0;
+        let lif_v_rest = -70.0;
+        let lif_v_reset = -70.0;
+        let lif_v_thresh = -50.0;
+        let lif_t_refrac = 2.0;
+        let lif_r_m = 10.0;
+        let lif_c_m = 1.0;
+
+        module.push(lif_neuron_v1(
+            lif_tau_m,
+            lif_v_rest,
+            lif_v_reset,
+            lif_v_thresh,
+            lif_t_refrac,
+            lif_r_m,
+            lif_c_m,
+        ));
+
+        // plasticity.stdp@v1 if requested
+        match self.plasticity {
+            PlasticityType::Stdp => {
+                // Defaults from runtime STDP defaults
+                let a_plus = 0.01;
+                let a_minus = 0.012;
+                let tau_plus = 20.0;
+                let tau_minus = 20.0;
+                let w_min = 0.0;
+                let w_max = 1.0;
+
+                module.push(stdp_rule_v1(
+                    a_plus, a_minus, tau_plus, tau_minus, w_min, w_max,
+                ));
+            }
+            PlasticityType::None => {}
+        }
+
+        // connectivity.layer_fully_connected@v1
+        match self.topology {
+            TopologyType::FullyConnected => {
+                // Input (0..inputs-1) -> Hidden (inputs..inputs+hidden-1)
+                if self.inputs > 0 && self.hidden > 0 {
+                    module.push(layer_fully_connected_v1(
+                        0,
+                        self.inputs.saturating_sub(1),
+                        self.inputs,
+                        self.inputs + self.hidden - 1,
+                        1.0,
+                        1.0,
+                    ));
+                }
+                // Hidden -> Output
+                if self.hidden > 0 && self.outputs > 0 {
+                    module.push(layer_fully_connected_v1(
+                        self.inputs,
+                        self.inputs + self.hidden - 1,
+                        self.inputs + self.hidden,
+                        self.inputs + self.hidden + self.outputs - 1,
+                        1.0,
+                        1.0,
+                    ));
+                }
+            }
+            _ => return Err(CliError::invalid_args("Only fully-connected topology supported for NIR compile v0")),
+        }
+
+        // Stimulus
+        let dt_ms = (self.dt_us as f32) / 1000.0;
+        let total_ms = dt_ms * (self.steps as f32);
+
+        match self.stimulus {
+            StimulusType::Poisson => {
+                for i in 0..self.inputs {
+                    module.push(stimulus_poisson_v1(
+                        i,
+                        self.stimulus_rate,
+                        10.0,
+                        0.0,
+                        total_ms,
+                    ));
+                }
+            }
+            _ => return Err(CliError::invalid_args("Only Poisson stimulus supported for NIR compile v0")),
+        }
+
+        // runtime.simulate.run@v1
+        module.push(runtime_simulate_run_v1(
+            dt_ms,
+            total_ms,
+            self.record_potentials,
+            self.seed,
+        ));
+
+        // Emit textual NIR
+        let text = module.to_text();
+        if let Some(parent) = self.output.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
+        std::fs::write(&self.output, text)?;
+        info!("Emitted NIR to {}", self.output.display());
+        Ok(())
+    }
+}
+
+impl NirRun {
+    pub async fn execute(self) -> CliResult<()> {
+        // Read textual NIR, parse, verify, compile, and run
+        let text = fs::read_to_string(&self.input)?;
+        let module = parse_text(&text)
+            .map_err(|e| CliError::Generic(anyhow::anyhow!(e)))?;
+
+        verify_module(&module).map_err(|e| CliError::Generic(anyhow::anyhow!(e)))?;
+
+        info!("Compiling NIR from {}", self.input.display());
+        let program = compile_with_passes(&module)
+            .map_err(|e| CliError::Generic(anyhow::anyhow!(e)))?;
+
+        info!("Running simulation...");
+        let result = program.run()?;
+        info!("Simulation completed: {} spikes", result.spikes.len());
+
+        // Optionally write results in requested format (default JSON)
+        if let Some(path) = &self.output {
+            if let Some(parent) = path.parent() {
+                std::fs::create_dir_all(parent)?;
+            }
+            match self.spikes_format {
+                SpikesFormat::Json => {
+                    let spike_data: Vec<_> = result.export_spikes().into_iter().map(|(time_ns, neuron_id)| {
+                        serde_json::json!({
+                            "neuron_id": neuron_id,
+                            "time_ns": time_ns,
+                            "time_ms": time_ns as f64 / 1_000_000.0,
+                        })
+                    }).collect();
+
+                    let json = serde_json::json!({
+                        "results": {
+                            "spike_count": result.spikes.len(),
+                            "spikes": spike_data
+                        }
+                    });
+                    std::fs::write(path, serde_json::to_string_pretty(&json)
+                        .map_err(|e| CliError::Generic(anyhow::anyhow!(e)))?)?;
+                    info!("Wrote results (JSON) to {}", path.display());
+                }
+                SpikesFormat::Vevt => {
+                    // Build VEVT events from exported spikes
+                    let spikes = result.export_spikes();
+                    let (start_ns, end_ns) = if spikes.is_empty() {
+                        (0u64, result.duration_ns)
+                    } else {
+                        let min_t = spikes.iter().map(|(t, _)| *t).min().unwrap();
+                        let max_t = spikes.iter().map(|(t, _)| *t).max().unwrap();
+                        (min_t, max_t)
+                    };
+
+                    let events: Vec<VEVTEvent> = spikes.into_iter().map(|(time_ns, neuron_id)| VEVTEvent {
+                        timestamp: time_ns,
+                        event_type: 0, // Spike
+                        source_id: neuron_id,
+                        target_id: u32::MAX,
+                        payload_size: 0,
+                        reserved: 0,
+                    }).collect();
+
+                    let bytes = encode_vevt(
+                        StreamId::new(1),
+                        StorageTime::from_nanos(start_ns),
+                        StorageTime::from_nanos(end_ns),
+                        &events
+                    ).map_err(|e| CliError::Generic(anyhow::anyhow!(e)))?;
+
+                    std::fs::write(path, &bytes)?;
+                    info!("Wrote results (VEVT) to {}", path.display());
+                }
+                SpikesFormat::GraphML => {
+                    // Export spikes as GraphML format
+                    let spikes = result.export_spikes();
+                    let mut graphml = String::new();
+                    graphml.push_str("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+                    graphml.push_str("<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd\">\n");
+                    graphml.push_str("  <graph id=\"spikes\" edgedefault=\"directed\">\n");
+
+                    // Add nodes for neurons
+                    let mut neurons = std::collections::HashSet::new();
+                    for (_, neuron_id) in &spikes {
+                        neurons.insert(*neuron_id);
+                    }
+                    for neuron_id in neurons {
+                        graphml.push_str(&format!("    <node id=\"neuron_{}\"/>\n", neuron_id));
+                    }
+
+                    // Add edges for spikes
+                    for (i, (time_ns, neuron_id)) in spikes.iter().enumerate() {
+                        graphml.push_str(&format!("    <edge id=\"spike_{}\" source=\"neuron_{}\" target=\"spike_event_{}\">\n", i, neuron_id, i));
+                        graphml.push_str(&format!("      <data key=\"time_ns\">{}</data>\n", time_ns));
+                        graphml.push_str("    </edge>\n");
+                        graphml.push_str(&format!("    <node id=\"spike_event_{}\">\n", i));
+                        graphml.push_str(&format!("      <data key=\"type\">spike</data>\n"));
+                        graphml.push_str(&format!("      <data key=\"time_ns\">{}</data>\n", time_ns));
+                        graphml.push_str("    </node>\n");
+                    }
+
+                    graphml.push_str("  </graph>\n");
+                    graphml.push_str("</graphml>\n");
+
+                    std::fs::write(path, &graphml)?;
+                    info!("Wrote results (GraphML) to {}", path.display());
+                }
+                SpikesFormat::LPGJson => {
+                    // Export as Labeled Property Graph JSON
+                    let spikes = result.export_spikes();
+                    let mut nodes = Vec::new();
+                    let mut edges = Vec::new();
+                    let mut node_id = 0;
+
+                    // Neurons
+                    let mut neuron_map = std::collections::HashMap::new();
+                    for (_, neuron_id) in &spikes {
+                        if !neuron_map.contains_key(neuron_id) {
+                            neuron_map.insert(*neuron_id, node_id);
+                            nodes.push(serde_json::json!({
+                                "id": node_id,
+                                "labels": ["Neuron"],
+                                "properties": {
+                                    "neuron_id": neuron_id
+                                }
+                            }));
+                            node_id += 1;
+                        }
+                    }
+
+                    // Spike events
+                    for (time_ns, neuron_id) in spikes {
+                        let spike_id = node_id;
+                        nodes.push(serde_json::json!({
+                            "id": spike_id,
+                            "labels": ["Spike"],
+                            "properties": {
+                                "time_ns": time_ns
+                            }
+                        }));
+                        edges.push(serde_json::json!({
+                            "id": node_id + 1,
+                            "type": "SPIKED",
+                            "start": neuron_map[&neuron_id],
+                            "end": spike_id,
+                            "properties": {}
+                        }));
+                        node_id += 2;
+                    }
+
+                    let lpg = serde_json::json!({
+                        "nodes": nodes,
+                        "edges": edges
+                    });
+
+                    std::fs::write(path, serde_json::to_string_pretty(&lpg)
+                        .map_err(|e| CliError::Generic(anyhow::anyhow!(e)))?)?;
+                    info!("Wrote results (LPG-JSON) to {}", path.display());
+                }
+                SpikesFormat::RDFNQuads => {
+                    // Export as RDF N-Quads
+                    let spikes = result.export_spikes();
+                    let mut nquads = String::new();
+
+                    for (time_ns, neuron_id) in spikes {
+                        nquads.push_str(&format!("<http://example.org/neuron/{}> <http://example.org/has_spike> <http://example.org/spike/{}_{}> .\n", neuron_id, neuron_id, time_ns));
+                        nquads.push_str(&format!("<http://example.org/spike/{}_{}> <http://example.org/time_ns> \"{}\" .\n", neuron_id, time_ns, time_ns));
+                    }
+
+                    std::fs::write(path, &nquads)?;
+                    info!("Wrote results (RDF N-Quads) to {}", path.display());
+                }
+            }
+        }
+
+        Ok(())
+    }
+}
+
+impl NirOpList {
+    pub async fn execute(self) -> CliResult<()> {
+        let ops = list_ops();
+        
+        // Group ops by dialect
+        let mut dialects: std::collections::BTreeMap<&str, Vec<_>> = std::collections::BTreeMap::new();
+        for op in ops {
+            dialects.entry(op.dialect).or_default().push(op);
+        }
+
+        println!("Registered dialects and ops:");
+        for (dialect, ops) in dialects {
+            println!("- {}:", dialect);
+            for op in ops {
+                if self.detailed {
+                    // Detailed mode: show attributes with types and docs
+                    println!("  - {}@v{} {{", op.name, op.version);
+                    for attr in op.attrs {
+                        let required = if attr.required { "" } else { "?" };
+                        println!("    {}{}: {} // {}", attr.name, required, attr.kind.name(), attr.doc);
+                    }
+                    println!("  }}");
+                } else {
+                    // Compact mode: just show signature
+                    let attrs: Vec<String> = op.attrs.iter().map(|a| {
+                        let required = if a.required { "" } else { "?" };
+                        format!("{}{}: {}", a.name, required, a.kind.name())
+                    }).collect();
+                    println!("  - {}@v{} {{ {} }}", op.name, op.version, attrs.join(", "));
+                }
+            }
+        }
+
+        if self.detailed {
+            println!("\nUnit reference:");
+            println!("- DurationNs, TimeNs: nanoseconds");
+            println!("- VoltageMv: millivolts, ResistanceMohm: megaohms, CapacitanceNf: nanofarads");
+            println!("- CurrentNa: nanoamps, RateHz: hertz");
+            println!("- Weight: dimensionless synaptic weight");
+            println!("- RangeU32: inclusive start..end range");
+            println!("- NeuronRef: reference to neuron by ID (%nX format in textual NIR)");
+        }
+
+        Ok(())
+    }
+}
+
+// --- Added: NirVerify command (parse + verify textual NIR) ---
+
+/// Verify textual NIR file
+#[derive(clap::Args, Debug)]
+pub struct NirVerify {
+    /// Input textual NIR file (.nirt)
+    pub input: std::path::PathBuf,
+}
+
+impl NirVerify {
+    pub async fn execute(self) -> crate::error::CliResult<()> {
+        let text = std::fs::read_to_string(&self.input)?;
+        let module = shnn_ir::parse_text(&text)
+            .map_err(|e| crate::error::CliError::Generic(anyhow::anyhow!(e)))?;
+        shnn_compiler::verify_module(&module)
+            .map_err(|e| crate::error::CliError::Generic(anyhow::anyhow!(e)))?;
+        println!("Verification OK: {}", self.input.display());
+        Ok(())
+    }
+}

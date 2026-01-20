@@ -1,0 +1,8 @@
+[toolchain]
+channel = "nightly"
+components = ["rustc", "cargo"]
+targets = ["x86_64-apple-darwin", "aarch64-apple-darwin"]
+profile = "default"
+
+[unstable]
+edition2024 = true

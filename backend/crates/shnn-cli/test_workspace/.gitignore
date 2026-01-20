@@ -1,0 +1,18 @@
+# Generated files
+/results/
+/data/*.bin
+/data/*.h5
+
+# Temporary files
+*.tmp
+*.log
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db

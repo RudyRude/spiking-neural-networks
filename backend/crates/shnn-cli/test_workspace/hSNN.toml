@@ -1,0 +1,26 @@
+# hSNN Workspace Configuration
+[workspace]
+name = "test_workspace"
+version = "0.1.0"
+
+[defaults]
+neuron_type = "lif"
+plasticity_type = "stdp"
+dt_us = 100
+seed = 42
+
+[lif]
+tau_m = 20.0      # membrane time constant (ms)
+tau_ref = 2.0     # refractory period (ms) 
+v_rest = -70.0    # resting potential (mV)
+v_reset = -80.0   # reset potential (mV)
+v_thresh = -50.0  # spike threshold (mV)
+r_m = 10.0        # membrane resistance (MΩ)
+
+[stdp]
+a_plus = 0.01     # potentiation amplitude
+a_minus = 0.012   # depression amplitude
+tau_plus = 20.0   # potentiation time constant (ms)
+tau_minus = 20.0  # depression time constant (ms)
+w_min = 0.0       # minimum weight
+w_max = 1.0       # maximum weight

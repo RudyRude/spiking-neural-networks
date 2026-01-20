@@ -1,0 +1,10 @@
+[package]
+name = "ndfh-hgts"
+version = "0.2.0"
+edition = "2021"
+description = "NDF-H HGTS temporal semantics (AS OF, OVER) skeleton"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+ndfh-core = { path = "../ndfh-core" }
+thiserror = "1.0"
