@@ -513,7 +513,7 @@ impl NeuromorphicBenchmark {
                 
                 let handle = runtime.spawn_task(async move {
                     let mut processed = 0u64;
-                    
+
                     for _timestep in 0..config.time_steps / 4 {
                         // Simulate spike processing
                         for _neuron in 0..config.neuron_count / 4 {
@@ -524,10 +524,10 @@ impl NeuromorphicBenchmark {
                             }
                         }
                     }
-                    
+
                     counter.fetch_add(processed, Ordering::Relaxed);
                     // Task must return () for spawn_task
-                });
+                }, TaskPriority::Normal);
                 
                 handles.push(handle);
             }

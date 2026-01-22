@@ -240,3 +240,136 @@ where
         true
     }
 }
+
+/// Weight structure for triplet STDP containing synaptic weight and trace variables
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct TripletWeight {
+    /// Synaptic weight
+    pub weight: f32,
+    /// Trace variables for triplet STDP
+    pub traces: TripletTraces,
+}
+
+impl Default for TripletWeight {
+    fn default() -> Self {
+        TripletWeight {
+            weight: 1.0,
+            traces: TripletTraces::default(),
+        }
+    }
+}
+
+/// Trace variables for triplet STDP
+/// r1: presynaptic trace, r2: postsynaptic trace
+/// o1: presynaptic pair trace, o2: postsynaptic pair trace
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct TripletTraces {
+    pub r1: f32,
+    pub r2: f32,
+    pub o1: f32,
+    pub o2: f32,
+}
+
+impl Default for TripletTraces {
+    fn default() -> Self {
+        TripletTraces {
+            r1: 0.0,
+            r2: 0.0,
+            o1: 0.0,
+            o2: 0.0,
+        }
+    }
+}
+
+/// Triplet spike-timing dependent plasticity rule
+/// Implements the triplet STDP model from Pfister & Gerstner (2006)
+#[derive(Debug, Clone, Copy, Timestep)]
+pub struct TripletSTDP {
+    /// Amplitude for potentiation from postsynaptic triplets (A2+)
+    pub a2_plus: f32,
+    /// Amplitude for depression from postsynaptic triplets (A2-)
+    pub a2_minus: f32,
+    /// Amplitude for potentiation from presynaptic triplets (A3+)
+    pub a3_plus: f32,
+    /// Amplitude for depression from presynaptic triplets (A3-)
+    pub a3_minus: f32,
+    /// Time constant for LTP (τ+)
+    pub tau_plus: f32,
+    /// Time constant for LTD (τ-)
+    pub tau_minus: f32,
+    /// Time constant for presynaptic trace (τ_x)
+    pub tau_x: f32,
+    /// Time constant for postsynaptic trace (τ_y)
+    pub tau_y: f32,
+    /// Timestep
+    pub dt: f32,
+}
+
+impl Default for TripletSTDP {
+    fn default() -> Self {
+        TripletSTDP {
+            a2_plus: 5.0e-3,
+            a2_minus: 5.0e-3,
+            a3_plus: 5.0e-3,
+            a3_minus: 5.0e-3,
+            tau_plus: 16.8,
+            tau_minus: 33.7,
+            tau_x: 101.0,
+            tau_y: 125.0,
+            dt: 0.1,
+        }
+    }
+}
+
+impl<T, U> Plasticity<T, U, TripletWeight> for TripletSTDP
+where
+    T: LastFiringTime,
+    U: IterateAndSpike,
+{
+    fn update_weight(&self, weight: &mut TripletWeight, presynaptic: &T, postsynaptic: &U) {
+        let mut delta_w = 0.0;
+
+        match (presynaptic.get_last_firing_time(), postsynaptic.get_last_firing_time()) {
+            (Some(t_pre), Some(t_post)) => {
+                let t_pre = t_pre as f32;
+                let t_post = t_post as f32;
+
+                // Determine timing (pre before post = LTP, post before pre = LTD)
+                let delta_t = (t_pre - t_post) * self.dt;
+
+                // Update traces
+                // On postsynaptic spike, update r2 and o2
+                weight.traces.r2 = weight.traces.r2 * (-self.dt / self.tau_y).exp() + 1.0;
+                weight.traces.o2 = weight.traces.o2 * (-self.dt / self.tau_y).exp() + weight.traces.r2;
+
+                // Update presynaptic traces based on spike timing
+                if delta_t < 0.0 {
+                    // Pre after post (LTD case)
+                    let time_since_pre = -delta_t;
+                    let exp_factor = (-time_since_pre / self.tau_x).exp();
+                    weight.traces.r1 = weight.traces.r1 * (-time_since_pre / self.tau_x).exp() + exp_factor;
+                    weight.traces.o1 = weight.traces.o1 * (-time_since_pre / self.tau_x).exp() + weight.traces.r1 * exp_factor;
+                } else {
+                    // Pre before post (LTP case)
+                    let time_since_pre = delta_t;
+                    let exp_factor = (-time_since_pre / self.tau_x).exp();
+                    weight.traces.r1 = weight.traces.r1 * exp_factor + exp_factor;
+                    weight.traces.o1 = weight.traces.o1 * exp_factor + weight.traces.r1 * exp_factor;
+                }
+
+                // Calculate weight change using triplet rule
+                delta_w = self.a2_plus * weight.traces.o2
+                        - self.a2_minus * weight.traces.o1
+                        + self.a3_plus * weight.traces.r2
+                        - self.a3_minus * weight.traces.r1;
+            }
+            _ => {}
+        }
+
+        weight.weight += delta_w;
+    }
+
+    fn do_update(&self, neuron: &U) -> bool {
+        neuron.is_spiking()
+    }
+}

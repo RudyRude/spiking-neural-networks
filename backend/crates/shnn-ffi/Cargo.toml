@@ -1,6 +1,6 @@
 [package]
 name = "shnn-ffi"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 authors = ["SHNN Team"]
 description = "Foreign Function Interface (FFI) bindings for SHNN hardware acceleration"
@@ -48,11 +48,11 @@ full-stack = ["cuda", "opencl", "fpga", "rram", "intel-loihi", "spiNNaker", "pro
 
 [dependencies]
 # Core dependencies
-shnn-core = { path = "../shnn-core", version = "0.1.0", default-features = false, features = ["std", "math", "serialize"] }
+shnn-core = { path = "../shnn-core", version = "1.0.0", default-features = false, features = ["std", "math", "serialize"] }
 # Note: keep optional to avoid compiling embedded crate in std builds
-shnn-embedded = { path = "../shnn-embedded", version = "0.1.0", default-features = false, optional = true, package = "shnn-embedded" }
-shnn-storage = { path = "../shnn-storage", version = "0.1.0" }
-shnn-runtime = { path = "../shnn-runtime", version = "0.1.0" }
+shnn-embedded = { path = "../shnn-embedded", version = "1.0.0", default-features = false, optional = true, package = "shnn-embedded" }
+shnn-storage = { path = "../shnn-storage", version = "1.0.0" }
+shnn-runtime = { path = "../shnn-runtime", version = "1.0.0" }
 
 # FFI and serialization
 libc = { version = "0.2", optional = true }

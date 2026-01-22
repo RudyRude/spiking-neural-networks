@@ -1,6 +1,6 @@
 [package]
 name = "shnn-micro"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 authors = ["hSNN Development Team <team@hsnn.org>"]
 license = "MIT OR Apache-2.0"
@@ -79,7 +79,7 @@ memory-tracking = []             # Memory usage tracking
 
 # Optional dependencies for enhanced builds
 nb = { version = "1.0", optional = true }
-heapless = { version = "0.8", optional = true }
+heapless = "0.8"
 linked_list_allocator = { version = "0.10", optional = true }
 
 # Platform-specific dependencies

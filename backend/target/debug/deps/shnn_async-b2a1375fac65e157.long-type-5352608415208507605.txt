@@ -1,0 +1,1 @@
+std::time::Duration: From<shnn_core::time::Duration>

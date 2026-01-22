@@ -6,7 +6,7 @@
 use shnn_serialize::{
     Serialize, Deserialize, BinaryEncoder, BinaryDecoder,
     Buffer, BufferMut, ZeroCopyBuffer,
-    endian::{Endianness, EndianConverter},
+    endian::{Endianness, EndianConverter, network},
     utils::{calculate_size, align_to, padding_needed},
     neural::{SpikeEvent, WeightMatrix, LayerState, NeuralSerializer},
 };
@@ -89,22 +89,47 @@ struct TestStruct {
 }
 
 impl Serialize for TestStruct {
-    fn serialize<W: BufferMut>(&self, encoder: &mut BinaryEncoder<W>) -> Result<(), Box<dyn std::error::Error>> {
-        self.id.serialize(encoder)?;
-        self.name.serialize(encoder)?;
-        self.values.serialize(encoder)?;
-        self.active.serialize(encoder)?;
+    fn serialize<W: BufferMut>(&self, encoder: &mut BinaryEncoder<W>) -> crate::Result<()> {
+        encoder.buffer.write_u32(self.id)?;
+
+        let name_bytes = self.name.as_bytes();
+        encoder.buffer.write_u32(name_bytes.len() as u32)?;
+        encoder.buffer.write_bytes(name_bytes)?;
+
+        encoder.buffer.write_u32(self.values.len() as u32)?;
+        for &val in &self.values {
+            encoder.buffer.write_f32(val)?;
+        }
+
+        encoder.buffer.write_u8(self.active as u8)?;
+
         Ok(())
+    }
+
+    fn serialized_size(&self) -> usize {
+        4 + // id
+        4 + self.name.len() + // name len + name
+        4 + self.values.len() * 4 + // values len + values
+        1 // active
     }
 }
 
 impl Deserialize for TestStruct {
-    fn deserialize<R: Buffer>(decoder: &mut BinaryDecoder<R>) -> Result<Self, Box<dyn std::error::Error>> {
-        let id = u32::deserialize(decoder)?;
-        let name = String::deserialize(decoder)?;
-        let values = Vec::<f32>::deserialize(decoder)?;
-        let active = bool::deserialize(decoder)?;
-        
+    fn deserialize<R: Buffer>(decoder: &mut BinaryDecoder<R>) -> crate::Result<Self> {
+        let id = decoder.buffer.read_u32()?;
+
+        let name_len = decoder.buffer.read_u32()? as usize;
+        let name_bytes = decoder.buffer.read_bytes(name_len)?;
+        let name = core::str::from_utf8(name_bytes).map_err(|_| crate::SerializeError::InvalidUtf8)?.to_string();
+
+        let values_len = decoder.buffer.read_u32()? as usize;
+        let mut values = Vec::new();
+        for _ in 0..values_len {
+            values.push(decoder.buffer.read_f32()?);
+        }
+
+        let active = decoder.buffer.read_u8()? != 0;
+
         Ok(TestStruct { id, name, values, active })
     }
 }
@@ -168,7 +193,7 @@ fn test_endianness() {
 #[test]
 fn test_zero_copy_buffer() {
     let data = vec![1u8, 2, 3, 4, 5, 6, 7, 8];
-    let buffer = ZeroCopyBuffer::new(&data);
+    let buffer = ZeroCopyBuffer::from_vec(data);
     
     assert_eq!(buffer.len(), 8);
     assert_eq!(buffer.remaining(), 8);
@@ -509,28 +534,56 @@ fn test_memory_alignment() {
     }
     
     impl Serialize for AlignedStruct {
-        fn serialize<W: BufferMut>(&self, encoder: &mut BinaryEncoder<W>) -> Result<(), Box<dyn std::error::Error>> {
-            self.a.serialize(encoder)?;
-            // Add padding for b's alignment
-            encoder.write_padding(padding_needed(1, 4))?;
-            self.b.serialize(encoder)?;
-            self.c.serialize(encoder)?;
-            // Add padding for d's alignment
-            encoder.write_padding(padding_needed(1 + 4 + 1, 8))?;
-            self.d.serialize(encoder)?;
+        fn serialize<W: BufferMut>(&self, encoder: &mut BinaryEncoder<W>) -> crate::Result<()> {
+            encoder.buffer.write_u8(self.a)?;
+
+            // Note: In a real aligned serialization, padding would be added here
+            // but for this test, we're using contiguous buffer
+            // Padding for b's alignment (assuming current offset 1, need 4-byte alignment)
+            let padding_b = crate::utils::padding_needed(1, 4);
+            encoder.buffer.write_padding(padding_b)?;
+            encoder.buffer.write_u32(self.b)?;
+
+            encoder.buffer.write_u8(self.c)?;
+
+            // Padding for d's alignment (current offset 1 + padding_b + 4 + 1, need 8-byte)
+            let current_offset = 1 + padding_b + 4 + 1;
+            let padding_d = crate::utils::padding_needed(current_offset, 8);
+            encoder.buffer.write_padding(padding_d)?;
+            encoder.buffer.write_u64(self.d)?;
+
             Ok(())
+        }
+
+        fn serialized_size(&self) -> usize {
+            // a: 1, padding to 4: 3, b:4, c:1, padding to 8: let's calculate
+            // After a (1), padding to 4: 3 bytes, total 4
+            // b:4, total 8
+            // c:1, total 9
+            // padding to 8: 7 bytes, total 16
+            // d:8, total 24
+            // But this is approximate, for test it's ok
+            1 + 3 + 4 + 1 + 7 + 8
         }
     }
     
     impl Deserialize for AlignedStruct {
-        fn deserialize<R: Buffer>(decoder: &mut BinaryDecoder<R>) -> Result<Self, Box<dyn std::error::Error>> {
-            let a = u8::deserialize(decoder)?;
-            decoder.skip_padding(padding_needed(1, 4))?;
-            let b = u32::deserialize(decoder)?;
-            let c = u8::deserialize(decoder)?;
-            decoder.skip_padding(padding_needed(1 + 4 + 1, 8))?;
-            let d = u64::deserialize(decoder)?;
-            
+        fn deserialize<R: Buffer>(decoder: &mut BinaryDecoder<R>) -> crate::Result<Self> {
+            let a = decoder.buffer.read_u8()?;
+
+            // Skip padding for b
+            let padding_b = crate::utils::padding_needed(1, 4);
+            decoder.buffer.skip_padding(padding_b)?;
+            let b = decoder.buffer.read_u32()?;
+
+            let c = decoder.buffer.read_u8()?;
+
+            // Skip padding for d
+            let current_offset = 1 + padding_b + 4 + 1;
+            let padding_d = crate::utils::padding_needed(current_offset, 8);
+            decoder.buffer.skip_padding(padding_d)?;
+            let d = decoder.buffer.read_u64()?;
+
             Ok(AlignedStruct { a, b, c, d })
         }
     }

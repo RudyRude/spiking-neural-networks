@@ -206,11 +206,11 @@ impl SHNNRuntime {
     }
 
     /// Spawn regular async task (simplified implementation)
-    pub fn spawn_task<F>(&self, future: F) -> TaskHandle<()>
+    pub fn spawn_task<F>(&self, future: F, priority: TaskPriority) -> TaskHandle<()>
     where
         F: Future<Output = ()> + Send + 'static,
     {
-        let task = Task::new(future, TaskPriority::Normal);
+        let task = Task::new(future, priority);
         let handle = TaskHandle::new(task.id());
 
         self.scheduler.schedule_task(task);

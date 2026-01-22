@@ -1,0 +1,14 @@
+/Users/mpro/august/spiking-neural-networks/backend/target/release/deps/clang_sys-e9b259880f32ff36.d: /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/clang-sys-1.8.1/src/lib.rs /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/clang-sys-1.8.1/src/support.rs /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/clang-sys-1.8.1/src/link.rs /Users/mpro/august/spiking-neural-networks/backend/target/release/build/clang-sys-7ac0956056ced844/out/macros.rs /Users/mpro/august/spiking-neural-networks/backend/target/release/build/clang-sys-7ac0956056ced844/out/common.rs /Users/mpro/august/spiking-neural-networks/backend/target/release/build/clang-sys-7ac0956056ced844/out/dynamic.rs
+
+/Users/mpro/august/spiking-neural-networks/backend/target/release/deps/libclang_sys-e9b259880f32ff36.rlib: /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/clang-sys-1.8.1/src/lib.rs /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/clang-sys-1.8.1/src/support.rs /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/clang-sys-1.8.1/src/link.rs /Users/mpro/august/spiking-neural-networks/backend/target/release/build/clang-sys-7ac0956056ced844/out/macros.rs /Users/mpro/august/spiking-neural-networks/backend/target/release/build/clang-sys-7ac0956056ced844/out/common.rs /Users/mpro/august/spiking-neural-networks/backend/target/release/build/clang-sys-7ac0956056ced844/out/dynamic.rs
+
+/Users/mpro/august/spiking-neural-networks/backend/target/release/deps/libclang_sys-e9b259880f32ff36.rmeta: /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/clang-sys-1.8.1/src/lib.rs /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/clang-sys-1.8.1/src/support.rs /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/clang-sys-1.8.1/src/link.rs /Users/mpro/august/spiking-neural-networks/backend/target/release/build/clang-sys-7ac0956056ced844/out/macros.rs /Users/mpro/august/spiking-neural-networks/backend/target/release/build/clang-sys-7ac0956056ced844/out/common.rs /Users/mpro/august/spiking-neural-networks/backend/target/release/build/clang-sys-7ac0956056ced844/out/dynamic.rs
+
+/Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/clang-sys-1.8.1/src/lib.rs:
+/Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/clang-sys-1.8.1/src/support.rs:
+/Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/clang-sys-1.8.1/src/link.rs:
+/Users/mpro/august/spiking-neural-networks/backend/target/release/build/clang-sys-7ac0956056ced844/out/macros.rs:
+/Users/mpro/august/spiking-neural-networks/backend/target/release/build/clang-sys-7ac0956056ced844/out/common.rs:
+/Users/mpro/august/spiking-neural-networks/backend/target/release/build/clang-sys-7ac0956056ced844/out/dynamic.rs:
+
+# env-dep:OUT_DIR=/Users/mpro/august/spiking-neural-networks/backend/target/release/build/clang-sys-7ac0956056ced844/out

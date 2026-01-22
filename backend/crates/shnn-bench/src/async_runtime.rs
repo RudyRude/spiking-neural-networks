@@ -141,7 +141,7 @@ impl AsyncRuntimeBenchmark {
                         sum += (i + j) as u64;
                     }
                     // Return () since spawn_task expects ()
-                });
+                }, TaskPriority::Normal);
                 handles.push(handle);
             }
             
@@ -165,7 +165,7 @@ impl AsyncRuntimeBenchmark {
                     for _ in 0..operations_per_task {
                         counter_clone.fetch_add(1, Ordering::Relaxed);
                     }
-                });
+                }, TaskPriority::Normal);
                 handles.push(handle);
             }
             
@@ -401,22 +401,22 @@ impl AsyncRuntimeBenchmark {
                     let threshold = 1.0f32;
                     let decay = 0.95f32;
                     let mut spikes_generated = 0u64;
-                    
+
                     for _ in 0..operations_per_task {
                         // Simulate synaptic input
                         let input = if neuron_id % 10 == 0 { 0.1 } else { 0.05 };
                         membrane_potential = membrane_potential * decay + input;
-                        
+
                         if membrane_potential >= threshold {
                             membrane_potential = 0.0; // Reset
                             spikes_generated += 1;
                             counter.fetch_add(1, Ordering::Relaxed);
                         }
                     }
-                    
+
                     // spawn_task expects () return type
                     let _spikes = spikes_generated;
-                });
+                }, TaskPriority::Normal);
                 handles.push(handle);
             }
             
@@ -443,12 +443,12 @@ impl AsyncRuntimeBenchmark {
                     let mut weight = 0.5f32;
                     let learning_rate = 0.01f32;
                     let mut updates = 0u64;
-                    
+
                     for timestep in 0..operations_per_task {
                         // Simulate pre/post synaptic activity
                         let pre_spike = timestep % 20 == 0;
                         let post_spike = (timestep + 5) % 25 == 0;
-                        
+
                         if pre_spike && post_spike {
                             // LTP (Long-Term Potentiation)
                             weight += learning_rate * (1.0 - weight);
@@ -458,14 +458,14 @@ impl AsyncRuntimeBenchmark {
                             weight -= learning_rate * weight;
                             updates += 1;
                         }
-                        
+
                         // Bounds checking
                         weight = weight.max(0.0).min(1.0);
                     }
-                    
+
                     counter.fetch_add(updates, Ordering::Relaxed);
                     // Return () since spawn_task expects () return type
-                });
+                }, TaskPriority::Normal);
                 handles.push(handle);
             }
             
@@ -567,7 +567,7 @@ impl RealTimeBenchmark {
                     // Minimal work
                     // spawn_task expects () return type
                     let _result = i * 2;
-                });
+                }, TaskPriority::Normal);
                 // Use try_get_result in a simple loop since join() doesn't exist
                 while handle.try_get_result().is_none() {
                     std::thread::yield_now();
@@ -592,7 +592,7 @@ impl RealTimeBenchmark {
                 let handle = runtime.spawn_task(async move {
                     // Just a simple task for jitter measurement
                     let _dummy = 42;
-                });
+                }, TaskPriority::Normal);
                 
                 // Wait for task completion
                 while handle.try_get_result().is_none() {

@@ -33,14 +33,18 @@ impl TaskId {
 /// Task priority levels for neuromorphic scheduling
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum TaskPriority {
+    /// High-priority tasks (alias for Spike)
+    High,
     /// Real-time spike processing (highest priority)
-    Spike = 0,
+    Spike,
     /// High-priority neural computation
-    Neural = 1,
+    Neural,
     /// Normal async tasks
-    Normal = 2,
+    Normal,
     /// Background/maintenance tasks
-    Background = 3,
+    Background,
+    /// Low priority tasks (alias for Background)
+    Low,
 }
 
 impl TaskPriority {

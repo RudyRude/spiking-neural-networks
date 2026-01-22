@@ -37,6 +37,7 @@ pub mod plasticity;
 use plasticity::{
     Plasticity, STDP, RewardModulator,
     RewardModulatedSTDP, RewardModulatedWeight, TraceRSTDP,
+    TripletSTDP, TripletWeight, TripletTraces,
 };
 /// A set of macros to automatically derive traits necessary for the `IterateAndSpike` trait.
 pub mod iterate_and_spike_traits {

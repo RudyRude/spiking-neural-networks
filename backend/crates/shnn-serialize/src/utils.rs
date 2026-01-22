@@ -20,6 +20,21 @@ pub fn padding_for_align(size: usize, align: usize) -> usize {
     align_size(size, align) - size
 }
 
+/// Calculate size of a type
+pub fn calculate_size<T>() -> usize {
+    core::mem::size_of::<T>()
+}
+
+/// Align size to boundary (alias for align_size)
+pub fn align_to(size: usize, alignment: usize) -> usize {
+    align_size(size, alignment)
+}
+
+/// Padding needed to align (alias for padding_for_align)
+pub fn padding_needed(size: usize, align: usize) -> usize {
+    padding_for_align(size, align)
+}
+
 /// Check if the system is little-endian
 pub fn is_little_endian() -> bool {
     cfg!(target_endian = "little")

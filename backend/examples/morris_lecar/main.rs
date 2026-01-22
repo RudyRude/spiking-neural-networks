@@ -25,7 +25,7 @@ fn main() {
         voltages.push(morris_lecar_neuron.current_voltage);
     }
 
-    let mut file = BufWriter::new(File::create("morris_lecar_static_input.csv")
+    let mut file = BufWriter::with_capacity(8 * 1024 * 1024, File::create("morris_lecar_static_input.csv")
         .expect("Could not create file"));
 
     writeln!(file, "voltages").expect("Could not write to file");

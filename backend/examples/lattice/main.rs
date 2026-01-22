@@ -53,7 +53,7 @@ fn main() -> Result<(), SpikingNeuralNetworksError> {
     // iterates internal electrical connections
     lattice.run_lattice(iterations)?;
 
-    let mut voltage_file = BufWriter::new(File::create("lattice_history.txt")
+    let mut voltage_file = BufWriter::with_capacity(8 * 1024 * 1024, File::create("lattice_history.txt")
         .expect("Could not create file"));
 
     // writes history to file

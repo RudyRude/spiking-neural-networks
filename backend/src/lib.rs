@@ -521,12 +521,15 @@
 //! }
 //! ```
 
+pub mod classifiers;
 pub mod correlation;
 pub mod distribution;
+pub mod digital_twin;
 pub mod eeg;
 pub mod error;
 pub mod fitting;
 pub mod ga;
 pub mod graph;
 pub mod interactable;
+pub mod nb_parsing;
 pub mod neuron;

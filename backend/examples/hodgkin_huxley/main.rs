@@ -60,7 +60,7 @@ fn main() -> Result<(), SpikingNeuralNetworksError> {
         }
     }
 
-    let mut file = BufWriter::new(File::create("coupled_hodgkin_huxley.csv")
+    let mut file = BufWriter::with_capacity(8 * 1024 * 1024, File::create("coupled_hodgkin_huxley.csv")
         .expect("Could not create file"));
 
     writeln!(file, "presynaptic_voltages,postsynaptic_voltages,Ts,rs").expect("Could not write to file");

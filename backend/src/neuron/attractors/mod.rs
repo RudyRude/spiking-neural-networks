@@ -680,9 +680,9 @@ pub fn distort_pattern(pattern: &[Vec<bool>], noise_level: f32) -> Vec<Vec<bool>
 /// Generates a set of random patterns based on a given size, number of patterns
 /// and degree of noise to use when generating the pattern
 pub fn generate_random_patterns(
-    num_rows: usize, 
-    num_cols: usize, 
-    num_patterns: usize, 
+    num_rows: usize,
+    num_cols: usize,
+    num_patterns: usize,
     p_zero: f32,
 ) -> Vec<Vec<Vec<bool>>> {
     let binomial = Binomial::new(1, p_zero.into()).expect("Could not create binomial distribution");
@@ -700,4 +700,131 @@ pub fn generate_random_patterns(
                 .collect()
         })
         .collect::<Vec<Vec<Vec<bool>>>>()
+}
+
+#[derive(Clone)]
+pub struct ContinuousNeuron {
+    pub state: f32,
+}
+
+impl Default for ContinuousNeuron {
+    fn default() -> Self {
+        ContinuousNeuron { state: 0.0 }
+    }
+}
+
+impl ContinuousNeuron {
+    pub fn update(&mut self, input: f32) {
+        self.state = input.tanh();
+    }
+}
+
+pub struct ContinuousNeuronLattice<T: Graph<K=(usize, usize), V=f32>>{
+    pub cell_grid: Vec<Vec<ContinuousNeuron>>,
+    pub graph: T,
+}
+
+impl<T: Graph<K=(usize, usize), V=f32>> Default for ContinuousNeuronLattice<T> {
+    fn default() -> Self {
+        ContinuousNeuronLattice {
+            cell_grid: vec![],
+            graph: T::default(),
+        }
+    }
+}
+
+impl<T: Graph<K=(usize, usize), V=f32>> ContinuousNeuronLattice<T> {
+    pub fn generate_lattice_from_dimension(num_rows: usize, num_cols: usize) -> Self {
+        let cell_grid: Vec<Vec<ContinuousNeuron>> = (0..num_rows)
+            .map(|_| {
+                (0..num_cols)
+                    .map(|_| ContinuousNeuron::default())
+                    .collect()
+            })
+            .collect();
+
+        ContinuousNeuronLattice {
+            cell_grid,
+            graph: T::default(),
+        }
+    }
+
+    pub fn input_pattern_into_continuous_grid(&mut self, pattern: Vec<Vec<f32>>) {
+        for (i, pattern_vec) in pattern.iter().enumerate() {
+            for (j, &value) in pattern_vec.iter().enumerate() {
+                self.cell_grid[i][j].state = value;
+            }
+        }
+    }
+
+    pub fn convert_to_vec(&self) -> Vec<Vec<f32>> {
+        self.cell_grid.iter()
+            .map(|row| row.iter().map(|n| n.state).collect())
+            .collect()
+    }
+
+    pub fn iterate(&mut self) -> result::Result<(), GraphError> {
+        for current_pos in self.graph.get_every_node() {
+            let input_positions = self.graph.get_incoming_connections(&current_pos)?;
+            let input_value: f32 = input_positions.iter()
+                .map(|graph_pos| {
+                    let (pos_i, pos_j) = graph_pos;
+                    self.graph.lookup_weight(graph_pos, &current_pos).unwrap().unwrap() * self.cell_grid[*pos_i][*pos_j].state
+                })
+                .sum();
+            self.cell_grid[current_pos.0][current_pos.1].update(input_value);
+        }
+        Ok(())
+    }
+}
+
+fn continuous_pattern_calculation(flattened_pattern: &Vec<f32>) -> Vec<Vec<f32>> {
+    flattened_pattern.iter()
+        .map(|&i| flattened_pattern.iter().map(|&j| i * j).collect())
+        .collect()
+}
+
+pub fn generate_continuous_hopfield_network<T: Graph<K=(usize, usize), V=f32> + Default>(
+    graph_id: usize,
+    data: &Vec<Vec<Vec<f32>>>,
+) -> result::Result<T, SpikingNeuralNetworksError> {
+    let num_rows = data.first().ok_or(PatternError::PatternDimensionsAreNotEqual)?.len();
+    let num_cols = data.first().unwrap().first().ok_or(PatternError::PatternDimensionsAreNotEqual)?.len();
+
+    for pattern in data {
+        if pattern.len() != num_rows || pattern.iter().any(|row| row.len() != num_cols) {
+            return Err(SpikingNeuralNetworksError::from(PatternError::PatternDimensionsAreNotEqual));
+        }
+    }
+
+    let mut weights = T::default();
+    weights.set_id(graph_id);
+
+    for i in 0..num_rows {
+        for j in 0..num_cols {
+            weights.add_node((i, j));
+        }
+    }
+
+    for pattern in data {
+        let flattened_pattern: Vec<f32> = pattern.iter().flatten().cloned().collect();
+        let weight_changes = continuous_pattern_calculation(&flattened_pattern);
+
+        for (i, weight_vec) in weight_changes.iter().enumerate() {
+            for (j, &value) in weight_vec.iter().enumerate() {
+                let coming = first_dimensional_index_to_position(i, num_cols);
+                let going = first_dimensional_index_to_position(j, num_cols);
+
+                if coming == going {
+                    weights.edit_weight(&coming, &going, None)?;
+                    continue;
+                }
+
+                let current_weight = weights.lookup_weight(&coming, &going)?.unwrap_or(0.);
+                weights.edit_weight(&coming, &going, Some(current_weight + value))?;
+            }
+        }
+    }
+
+    Ok(weights)
 }

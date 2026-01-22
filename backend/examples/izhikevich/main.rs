@@ -42,7 +42,7 @@ fn main() {
         postsynaptic_voltages.push(postsynaptic_neuron.current_voltage);
     }
 
-    let mut file = BufWriter::new(File::create("coupled_izhikevich.csv")
+    let mut file = BufWriter::with_capacity(8 * 1024 * 1024, File::create("coupled_izhikevich.csv")
         .expect("Could not create file"));
 
     writeln!(file, "presynaptic_voltages,postsynaptic_voltages").expect("Could not write to file");

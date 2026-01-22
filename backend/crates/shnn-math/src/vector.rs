@@ -49,6 +49,13 @@ impl Vector {
             data: data.to_vec(),
         }
     }
+
+    /// Create vector filled with a specific value
+    pub fn filled(length: usize, value: Float) -> Self {
+        Self {
+            data: vec![value; length],
+        }
+    }
     
     /// Get vector length
     pub fn len(&self) -> usize {
@@ -388,16 +395,7 @@ impl Add for Vector {
     }
 }
 
-impl Sub for Vector {
-    type Output = Vector;
-    
-    fn sub(mut self, other: Vector) -> Self::Output {
-        for i in 0..self.len().min(other.len()) {
-            self.data[i] -= other.data[i];
-        }
-        self
-    }
-}
+
 
 impl Mul<Float> for Vector {
     type Output = Vector;
@@ -576,10 +574,10 @@ mod tests {
         
         let dot = a.dot(&b).unwrap();
         assert_eq!(dot, 32.0); // 1*4 + 2*5 + 3*6
-        
-        let sum = a.add(&b).unwrap();
+
+        let sum = a.clone() + b.clone();
         assert_eq!(sum.data(), &[5.0, 7.0, 9.0]);
-        
+
         let diff = b.sub(&a).unwrap();
         assert_eq!(diff.data(), &[3.0, 3.0, 3.0]);
     }

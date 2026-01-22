@@ -15,7 +15,7 @@ use alloc::{vec::Vec, vec};
 /// Binary format encoder for serializing data structures
 #[derive(Debug)]
 pub struct BinaryEncoder<'a> {
-    buffer: BufferMut<'a>,
+    pub buffer: BufferMut<'a>,
     written_header: bool,
 }
 
@@ -56,15 +56,10 @@ impl<'a> BinaryEncoder<'a> {
         // Write the serialized size first
         let size = value.serialized_size();
         self.buffer.write_u32(size as u32)?;
-        
+
         // Write the actual data
-        let remaining = self.buffer.remaining_mut();
-        let written = value.serialize(remaining)?;
-        
-        // Advance the buffer position
-        let new_pos = self.buffer.position() + written;
-        self.buffer.seek(new_pos)?;
-        
+        value.serialize(self)?;
+
         Ok(())
     }
 
@@ -139,7 +134,7 @@ impl<'a> BinaryEncoder<'a> {
 /// Binary format decoder for deserializing data structures
 #[derive(Debug)]
 pub struct BinaryDecoder<'a> {
-    buffer: Buffer<'a>,
+    pub buffer: Buffer<'a>,
     validated_header: bool,
 }
 
@@ -178,16 +173,16 @@ impl<'a> BinaryDecoder<'a> {
     }
 
     /// Decode a value using its Deserialize implementation
-    pub fn decode<T: Deserialize<'a>>(&mut self) -> Result<T> {
+    pub fn decode<T: Deserialize>(&mut self) -> Result<T> {
         if !self.validated_header {
             self.validate_header()?;
         }
 
         // Read the serialized size
         let _size = self.buffer.read_u32()?;
-        
+
         // Deserialize the data
-        T::deserialize(self.buffer.remaining_slice())
+        T::deserialize(self)
     }
 
     /// Decode raw bytes with length prefix
@@ -211,7 +206,7 @@ impl<'a> BinaryDecoder<'a> {
     }
 
     /// Decode an array of values
-    pub fn decode_array<T: Deserialize<'a>>(&mut self) -> Result<Vec<T>> {
+    pub fn decode_array<T: Deserialize>(&mut self) -> Result<Vec<T>> {
         if !self.validated_header {
             self.validate_header()?;
         }
@@ -274,7 +269,7 @@ pub mod utils {
 
     /// Serialize a value to a vector
     pub fn serialize_to_vec<T: Serialize>(value: &T) -> Result<Vec<u8>> {
-        let size = value.serialized_size() + 8; // Header + size prefix
+        let size = value.serialized_size() + 12; // Header + size prefix + data
         let mut buffer = vec![0u8; size];
         
         let position = {
@@ -287,7 +282,7 @@ pub mod utils {
     }
 
     /// Deserialize a value from bytes
-    pub fn deserialize_from_bytes<'a, T: Deserialize<'a>>(bytes: &'a [u8]) -> Result<T> {
+    pub fn deserialize_from_bytes<T: Deserialize>(bytes: &[u8]) -> Result<T> {
         let mut decoder = BinaryDecoder::new(Buffer::new(bytes));
         decoder.decode()
     }

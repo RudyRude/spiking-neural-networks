@@ -57,7 +57,7 @@ fn test_hopfield_network<T: Graph<K=(usize, usize), V=f32>>(
             hopfield_history.push(discrete_lattice.convert_to_numerics());
         }
 
-        let mut hopfield_file = BufWriter::new(File::create(format!("{}_hopfield.txt", n + 1))
+        let mut hopfield_file = BufWriter::with_capacity(8 * 1024 * 1024, File::create(format!("{}_hopfield.txt", n + 1))
             .expect("Could not create file"));
 
         for grid in hopfield_history {

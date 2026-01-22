@@ -47,7 +47,7 @@ fn main() -> Result<(), SpikingNeuralNetworksError> {
 
     network.run_lattices(5_000)?;
 
-    let mut inh_voltage_file = BufWriter::new(File::create("inh_lattice_history.csv")
+    let mut inh_voltage_file = BufWriter::with_capacity(8 * 1024 * 1024, File::create("inh_lattice_history.csv")
         .expect("Could not create file"));
 
     writeln!(inh_voltage_file, "voltages").expect("Could not write to file");
@@ -55,7 +55,7 @@ fn main() -> Result<(), SpikingNeuralNetworksError> {
         writeln!(inh_voltage_file, "{}", average).expect("Could not write to file");
     }
 
-    let mut exc_voltage_file = BufWriter::new(File::create("exc_lattice_history.csv")
+    let mut exc_voltage_file = BufWriter::with_capacity(8 * 1024 * 1024, File::create("exc_lattice_history.csv")
         .expect("Could not create file"));
 
     writeln!(exc_voltage_file, "voltages").expect("Could not write to file");

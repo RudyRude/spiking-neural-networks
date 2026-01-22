@@ -5,6 +5,54 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-01-21
+
+### Added
+- **Digital Twin Framework**: Modular brain region simulation system
+  - BrainRegion trait for composable brain modules
+  - DigitalTwin orchestrator for multi-region connectivity
+  - Pre-built modules: CorticalModule, HippocampalModule, LsmModule, ClassifierModule
+  - Neuromodulated learning across regions
+- **Advanced Classifiers and Regressors**:
+  - STDP-based unsupervised classifier
+  - R-STDP classifier with reward-modulated learning
+  - LSM-based classification and regression
+  - Comprehensive evaluation metrics and performance analysis
+- **Enhanced Plasticity Systems**:
+  - BCM rule with sliding threshold
+  - Reward-modulated STDP (R-STDP)
+  - Triplet STDP for temporal dependencies
+  - Homeostatic plasticity and synaptic scaling
+  - Meta-plasticity with neuromodulator sensitivity
+  - Structural plasticity with pruning and formation
+- **Neuromodulation and Pathology**:
+  - Metabotropic neurotransmitters (dopamine, serotonin, acetylcholine)
+  - Astrocyte models with tripartite synapses
+  - Virtual pathology simulation (schizophrenia, Alzheimer's)
+  - Virtual medication system for treatment modeling
+- **Documentation Enhancements**:
+  - Comprehensive advanced usage guide
+  - Troubleshooting guide with common issues and solutions
+  - Example-based tutorials for classifiers, digital twin, and plasticity
+  - Updated API documentation with stability badges
+  - Production-ready release documentation
+
+### Changed
+- **Performance Optimizations**: Increased BufWriter capacity to 8MB for I/O performance
+- **API Stability**: Added stability indicators (Stable/Experimental/Unstable) across all APIs
+- **Documentation**: Complete rewrite removing outdated content, adding current features
+
+### Fixed
+- **Compilation Issues**: Resolved multiple compilation errors in test suites
+- **Type Annotations**: Fixed neuron pool type annotations
+- **API Consistency**: Ensured consistent terminology across documentation
+
+### Security
+- **Input Validation**: Enhanced parameter validation for numerical stability
+- **Memory Safety**: Rust-based implementation ensures memory safety guarantees
+
+---
+
 ## [0.1.0] - 2024-01-20
 
 ### Added

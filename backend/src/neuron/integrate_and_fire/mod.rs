@@ -298,7 +298,7 @@ impl_default_impl_integrate_and_fire!(QuadraticIntegrateAndFireNeuron);
 impl<T: NeurotransmitterKinetics, R: ReceptorKinetics> Default for QuadraticIntegrateAndFireNeuron<T, R> {
     fn default() -> Self {
         QuadraticIntegrateAndFireNeuron {
-            current_voltage: -75., 
+            current_voltage: -75.,
             refractory_count: 0.0,
             integration_constant: 1.,
             gap_conductance: 7.,
@@ -310,7 +310,7 @@ impl<T: NeurotransmitterKinetics, R: ReceptorKinetics> Default for QuadraticInte
             c_m: 100., // membrane capacitance (nF)
             v_init: -75., // initial potential (mV)
             tref: 10., // refractory time (ms), could rename to refract_time
-            dt: 0.1, // simulation time step (ms)
+            dt: 0.2, // simulation time step (ms)
             is_spiking: false,
             last_firing_time: None,
             synaptic_neurotransmitters: Neurotransmitters::<IonotropicNeurotransmitterType, T>::default(),
@@ -1198,7 +1198,7 @@ impl_default_impl_integrate_and_fire!(IzhikevichNeuron);
 impl<T: NeurotransmitterKinetics, R: ReceptorKinetics> Default for IzhikevichNeuron<T, R> {
     fn default() -> Self {
         IzhikevichNeuron {
-            current_voltage: -65., 
+            current_voltage: -65.,
             gap_conductance: 7.,
             w_value: 30.,
             a: 0.02,
@@ -1210,7 +1210,7 @@ impl<T: NeurotransmitterKinetics, R: ReceptorKinetics> Default for IzhikevichNeu
             c_m: 100., // membrane capacitance (nF)
             v_init: -65., // initial potential (mV)
             w_init: 30., // initial w value
-            dt: 0.1, // simulation time step (ms)
+            dt: 0.2, // simulation time step (ms)
             is_spiking: false,
             last_firing_time: None,
             synaptic_neurotransmitters: Neurotransmitters::<IonotropicNeurotransmitterType, T>::default(),

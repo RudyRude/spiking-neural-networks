@@ -89,7 +89,7 @@ fn main() -> Result<(), SpikingNeuralNetworksError> {
 
     env.run_with_reward(10000)?;
 
-    let mut file = BufWriter::new(File::create("weights.txt").expect("Could not create file"));
+    let mut file = BufWriter::with_capacity(8 * 1024 * 1024, File::create("weights.txt").expect("Could not create file"));
 
     for matrix in env.agent.graph.history {
         for row in matrix {
@@ -106,7 +106,7 @@ fn main() -> Result<(), SpikingNeuralNetworksError> {
         writeln!(file, "-----").expect("Could not write to file");
     }
 
-    let mut file = BufWriter::new(File::create("dopamine.txt").expect("Could not create file"));
+    let mut file = BufWriter::with_capacity(8 * 1024 * 1024, File::create("dopamine.txt").expect("Could not create file"));
 
     for i in env.state.dopamine_history {
         writeln!(file, "{}", i).expect("Could not write to file");

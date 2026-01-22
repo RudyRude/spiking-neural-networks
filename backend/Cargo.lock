@@ -4118,7 +4118,7 @@ dependencies = [
  "memoffset",
  "parking_lot",
  "portable-atomic",
- "pyo3-build-config",
+ "pyo3-build-config 0.20.3",
  "pyo3-ffi",
  "pyo3-macros",
  "unindent",
@@ -4149,13 +4149,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "pyo3-build-config"
+version = "0.21.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7883df5835fafdad87c0d888b266c8ec0f4c9ca48a5bed6bbb592e8dedee1b50"
+dependencies = [
+ "once_cell",
+ "target-lexicon",
+]
+
+[[package]]
 name = "pyo3-ffi"
 version = "0.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "62b42531d03e08d4ef1f6e85a2ed422eb678b8cd62b762e53891c05faf0d4afa"
 dependencies = [
  "libc",
- "pyo3-build-config",
+ "pyo3-build-config 0.20.3",
 ]
 
 [[package]]
@@ -4178,7 +4188,7 @@ checksum = "7c7e9b68bb9c3149c5b0cade5d07f953d6d125eb4337723c4ccdb665f1f96185"
 dependencies = [
  "heck 0.4.1",
  "proc-macro2",
- "pyo3-build-config",
+ "pyo3-build-config 0.20.3",
  "quote",
  "syn 2.0.87",
 ]
@@ -4729,7 +4739,7 @@ checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
 [[package]]
 name = "shnn-async"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "async-channel 2.5.0",
@@ -4756,15 +4766,16 @@ dependencies = [
 
 [[package]]
 name = "shnn-async-runtime"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "criterion",
  "spin",
+ "tokio",
 ]
 
 [[package]]
 name = "shnn-bench"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "criterion",
  "crossbeam",
@@ -4782,7 +4793,7 @@ dependencies = [
 
 [[package]]
 name = "shnn-cli"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -4812,7 +4823,7 @@ dependencies = [
 
 [[package]]
 name = "shnn-compiler"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "shnn-ir",
  "shnn-runtime",
@@ -4822,7 +4833,7 @@ dependencies = [
 
 [[package]]
 name = "shnn-core"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4853,7 +4864,7 @@ dependencies = [
 
 [[package]]
 name = "shnn-embedded"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "cordic",
  "cortex-m",
@@ -4873,7 +4884,7 @@ dependencies = [
 
 [[package]]
 name = "shnn-ffi"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "bincode",
  "bindgen",
@@ -4911,22 +4922,22 @@ dependencies = [
 
 [[package]]
 name = "shnn-ir"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "thiserror 1.0.63",
 ]
 
 [[package]]
 name = "shnn-lockfree"
-version = "0.1.0"
+version = "1.0.0"
 
 [[package]]
 name = "shnn-math"
-version = "0.1.0"
+version = "1.0.0"
 
 [[package]]
 name = "shnn-micro"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "cortex-m",
  "embedded-hal 1.0.0",
@@ -4938,7 +4949,7 @@ dependencies = [
 
 [[package]]
 name = "shnn-python"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "chrono",
  "log",
@@ -4948,7 +4959,7 @@ dependencies = [
  "polars",
  "pyo3",
  "pyo3-asyncio",
- "pyo3-build-config",
+ "pyo3-build-config 0.21.2",
  "serde",
  "serde_json",
  "shnn-async",
@@ -4965,7 +4976,7 @@ dependencies = [
 
 [[package]]
 name = "shnn-runtime"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "criterion",
  "heapless 0.8.0",
@@ -4981,11 +4992,11 @@ dependencies = [
 
 [[package]]
 name = "shnn-serialize"
-version = "0.1.0"
+version = "1.0.0"
 
 [[package]]
 name = "shnn-storage"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "bincode",
  "crc32fast",
@@ -5002,15 +5013,15 @@ dependencies = [
 
 [[package]]
 name = "shnn-wasm"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "console_error_panic_hook",
  "getrandom 0.2.15",
  "js-sys",
- "ndfh-core",
  "serde",
  "serde-wasm-bindgen",
  "serde_json",
+ "shnn-core",
  "thiserror 1.0.63",
  "wasm-bindgen",
  "wasm-bindgen-futures",

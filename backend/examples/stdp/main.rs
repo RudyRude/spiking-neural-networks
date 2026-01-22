@@ -144,7 +144,7 @@ fn main() -> Result<(), SpikingNeuralNetworksError> {
     // could have option to directly plot in terminal
 
     let keys_vector = generate_keys(firing_times.len());
-    let mut voltages_file = BufWriter::new(File::create("voltages.csv").expect("Could not create file"));
+    let mut voltages_file = BufWriter::with_capacity(8 * 1024 * 1024, File::create("voltages.csv").expect("Could not create file"));
 
     for (n, i) in keys_vector.iter().enumerate() {
         if n != keys_vector.len() - 1 {
@@ -165,7 +165,7 @@ fn main() -> Result<(), SpikingNeuralNetworksError> {
         }
     }
 
-    let mut weights_file = BufWriter::new(File::create("weights.txt").expect("Could not create file"));
+    let mut weights_file = BufWriter::with_capacity(8 * 1024 * 1024, File::create("weights.txt").expect("Could not create file"));
 
     for matrix in weight_history.iter() {
         for row in matrix {

@@ -570,7 +570,7 @@ mod tests {
     #[test]
     fn test_spike_network_basic() {
         let connectivity = GraphNetwork::new();
-        let neurons = NeuronPool::new();
+        let neurons: NeuronPool<LIFNeuron> = NeuronPool::new();
         let plasticity = PlasticityManager::new();
         let encoder = MultiModalEncoder::new();
         
@@ -618,7 +618,7 @@ mod tests {
     #[test]
     fn test_network_reset() {
         let connectivity = GraphNetwork::new();
-        let neurons = NeuronPool::new();
+        let neurons: NeuronPool<LIFNeuron> = NeuronPool::new();
         let plasticity = PlasticityManager::new();
         let encoder = MultiModalEncoder::new();
         

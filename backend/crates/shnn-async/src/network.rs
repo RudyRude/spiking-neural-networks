@@ -159,7 +159,7 @@ struct AsyncNetworkInner {
     /// Network handle
     handle: NetworkHandle,
     /// Neuron pool
-    neurons: NeuronPool,
+    neurons: NeuronPool<LIFNeuron>,
     /// Hypergraph connectivity
     hypergraph: HypergraphNetwork,
     /// Spike processing queue
@@ -313,7 +313,7 @@ impl AsyncNetworkManager {
         let network = self.get_network(network_id)?;
         let mut net = network.write().unwrap();
         
-        net.neurons.add_lif_neuron(neuron)
+        net.neurons.add_neuron(neuron)
             .map_err(AsyncError::from)?;
         
         #[cfg(feature = "tracing")]
@@ -382,7 +382,7 @@ impl AsyncNetworkManager {
             for &target_id in &route.targets {
                 let mut net = network.write().unwrap();
                 
-                if let Some(neuron) = net.neurons.get_lif_neuron_mut(target_id) {
+                if let Some(neuron) = net.neurons.get_neuron_mut(target_id) {
                     if let Some(output) = neuron.process_spike(&spike, route.delivery_time) {
                         output_spikes.push(output.clone());
                         
@@ -465,7 +465,7 @@ impl AsyncNetworkManager {
         net.current_time = new_time;
         
         // Update all neurons
-        net.neurons.update_all(new_time, dt);
+        net.neurons.update_all(dt.as_nanos() as u64);
         
         // Process any ready spikes from queue
         let ready_spikes = net.spike_queue.pop_ready(new_time);
@@ -484,18 +484,20 @@ impl AsyncNetworkManager {
         let networks = self.networks.clone();
         
         self.runtime.spawn(async move {
-            let mut interval_timer = 
+            let mut interval_timer =
                 #[cfg(feature = "tokio-runtime")]
                 tokio::time::interval(interval.into());
-                
+
             loop {
                 #[cfg(feature = "tokio-runtime")]
                 interval_timer.tick().await;
-                
+
                 if let Some(network) = networks.get(&network_id) {
                     let net = network.read().unwrap();
                     if let Some(ref monitor) = net.monitor {
-                        monitor.collect_metrics(&net.metrics).await;
+                        let metrics = net.metrics.clone();
+                        drop(net); // Release lock before await
+                        monitor.collect_metrics(&metrics).await;
                     }
                 } else {
                     break; // Network was removed

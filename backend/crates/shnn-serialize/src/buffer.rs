@@ -23,6 +23,15 @@ impl<'a> Buffer<'a> {
         Self { data, position: 0 }
     }
 
+    /// Skip padding bytes
+    pub fn skip_padding(&mut self, padding: usize) -> Result<()> {
+        if !self.has_remaining(padding) {
+            return Err(SerializeError::UnexpectedEof);
+        }
+        self.position += padding;
+        Ok(())
+    }
+
     /// Get the current position in the buffer
     pub fn position(&self) -> usize {
         self.position
@@ -86,6 +95,14 @@ impl<'a> Buffer<'a> {
     pub fn read_f32(&mut self) -> Result<f32> {
         let bits = self.read_u32()?;
         Ok(f32::from_bits(bits))
+    }
+
+    /// Read a 64-bit unsigned integer (little-endian)
+    pub fn read_u64(&mut self) -> Result<u64> {
+        let bytes = self.read_bytes(8)?;
+        let mut array = [0u8; 8];
+        array.copy_from_slice(bytes);
+        Ok(u64::from_le_bytes(array))
     }
 
     /// Read a slice of the specified type with zero-copy
@@ -195,6 +212,20 @@ impl<'a> BufferMut<'a> {
     pub fn write_f32(&mut self, value: f32) -> Result<()> {
         let bits = value.to_bits();
         self.write_u32(bits)
+    }
+
+    /// Write a 64-bit unsigned integer (little-endian)
+    pub fn write_u64(&mut self, value: u64) -> Result<()> {
+        let bytes = value.to_le_bytes();
+        self.write_bytes(&bytes)
+    }
+
+    /// Write padding bytes
+    pub fn write_padding(&mut self, padding: usize) -> Result<()> {
+        for _ in 0..padding {
+            self.write_u8(0)?;
+        }
+        Ok(())
     }
 
     /// Write a slice with zero-copy

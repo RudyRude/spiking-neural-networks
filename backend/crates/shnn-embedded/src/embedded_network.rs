@@ -388,7 +388,13 @@ impl<T: FixedPoint> EmbeddedSNN<T> {
                             // Add to spike history buffer
                             self.spike_buffer.add_spike(spike)?;
                             // Route spike to synapses (partition-aware when enabled)
-                            for synapse in &mut self.synapses {
+                            let mut stdp_synapses = heapless::Vec::<usize, 16>::new();
+                            for (syn_idx, synapse) in self.synapses.iter().enumerate() {
+                                if synapse.pre_id == spike.source {
+                                    stdp_synapses.push(syn_idx).ok();
+                                }
+                            }
+                            for (syn_idx, synapse) in self.synapses.iter_mut().enumerate() {
                                 if synapse.pre_id == spike.source {
                                     #[cfg(feature = "partitioning")]
                                     {
@@ -404,12 +410,27 @@ impl<T: FixedPoint> EmbeddedSNN<T> {
                                                     if pre_idx < self.pre_trace.len() {
                                                         self.pre_trace[pre_idx] = self.pre_trace[pre_idx] + T::one();
                                                     }
-                                                    // Apply STDP: find synapse index and update weight
-                                                    for (syn_idx, syn) in self.synapses.iter().enumerate() {
-                                                        if syn.pre_id == spike.source && syn.post_id == synapse.post_id {
-                                                            self.apply_stdp(spike.source, synapse.post_id, syn_idx);
-                                                            break;
+                                                    // Apply STDP: update weight directly with mutable synapse reference
+                                                    let post_idx = synapse.post_id as usize;
+                                                    if pre_idx < self.pre_trace.len() && post_idx < self.post_trace.len() {
+                                                        // LTD: w -= a_minus * post_trace[post]
+                                                        let ltd_amount = self.plastic_a_minus * self.post_trace[post_idx];
+
+                                                        // LTP: w += a_plus * pre_trace[pre]
+                                                        let ltp_amount = self.plastic_a_plus * self.pre_trace[pre_idx];
+
+                                                        // Apply weight change
+                                                        let mut new_weight = synapse.weight - ltd_amount + ltp_amount;
+
+                                                        // Clamp to bounds
+                                                        if new_weight < self.plastic_w_min {
+                                                            new_weight = self.plastic_w_min;
                                                         }
+                                                        if new_weight > self.plastic_w_max {
+                                                            new_weight = self.plastic_w_max;
+                                                        }
+
+                                                        synapse.weight = new_weight;
                                                     }
                                                 }
                                                 let _ = self.active_list.push_back(synapse.post_id);
@@ -427,12 +448,27 @@ impl<T: FixedPoint> EmbeddedSNN<T> {
                                                     if pre_idx < self.pre_trace.len() {
                                                         self.pre_trace[pre_idx] = self.pre_trace[pre_idx] + T::one();
                                                     }
-                                                    // Apply STDP: find synapse index and update weight
-                                                    for (syn_idx, syn) in self.synapses.iter().enumerate() {
-                                                        if syn.pre_id == spike.source && syn.post_id == synapse.post_id {
-                                                            self.apply_stdp(spike.source, synapse.post_id, syn_idx);
-                                                            break;
+                                                    // Apply STDP: update weight directly with mutable synapse reference
+                                                    let post_idx = synapse.post_id as usize;
+                                                    if pre_idx < self.pre_trace.len() && post_idx < self.post_trace.len() {
+                                                        // LTD: w -= a_minus * post_trace[post]
+                                                        let ltd_amount = self.plastic_a_minus * self.post_trace[post_idx];
+
+                                                        // LTP: w += a_plus * pre_trace[pre]
+                                                        let ltp_amount = self.plastic_a_plus * self.pre_trace[pre_idx];
+
+                                                        // Apply weight change
+                                                        let mut new_weight = synapse.weight - ltd_amount + ltp_amount;
+
+                                                        // Clamp to bounds
+                                                        if new_weight < self.plastic_w_min {
+                                                            new_weight = self.plastic_w_min;
                                                         }
+                                                        if new_weight > self.plastic_w_max {
+                                                            new_weight = self.plastic_w_max;
+                                                        }
+
+                                                        synapse.weight = new_weight;
                                                     }
                                                 }
                                                 let _ = self.active_list.push_back(synapse.post_id);
@@ -448,12 +484,27 @@ impl<T: FixedPoint> EmbeddedSNN<T> {
                                             if pre_idx < self.pre_trace.len() {
                                                 self.pre_trace[pre_idx] = self.pre_trace[pre_idx] + T::one();
                                             }
-                                            // Apply STDP: find synapse index and update weight
-                                            for (syn_idx, syn) in self.synapses.iter().enumerate() {
-                                                if syn.pre_id == spike.source && syn.post_id == synapse.post_id {
-                                                    self.apply_stdp(spike.source, synapse.post_id, syn_idx);
-                                                    break;
+                                            // Apply STDP: update weight directly with mutable synapse reference
+                                            let post_idx = synapse.post_id as usize;
+                                            if pre_idx < self.pre_trace.len() && post_idx < self.post_trace.len() {
+                                                // LTD: w -= a_minus * post_trace[post]
+                                                let ltd_amount = self.plastic_a_minus * self.post_trace[post_idx];
+
+                                                // LTP: w += a_plus * pre_trace[pre]
+                                                let ltp_amount = self.plastic_a_plus * self.pre_trace[pre_idx];
+
+                                                // Apply weight change
+                                                let mut new_weight = synapse.weight - ltd_amount + ltp_amount;
+
+                                                // Clamp to bounds
+                                                if new_weight < self.plastic_w_min {
+                                                    new_weight = self.plastic_w_min;
                                                 }
+                                                if new_weight > self.plastic_w_max {
+                                                    new_weight = self.plastic_w_max;
+                                                }
+
+                                                synapse.weight = new_weight;
                                             }
                                         }
                                         let _ = self.active_list.push_back(synapse.post_id);
@@ -511,40 +562,7 @@ impl<T: FixedPoint> EmbeddedSNN<T> {
             }
         }
     }
-    
-    #[cfg(feature = "partitioning")]
-    fn drain_partition_queues(&mut self, max_spikes: usize) {
-        use crate::partitioning::{MAX_PARTITIONS, PartitionId};
-        let mut processed = 0usize;
-        for pid in 0..MAX_PARTITIONS {
-            if processed >= max_spikes { break; }
-            let pid_u8: PartitionId = pid as PartitionId;
-            // Drain this partition's queue
-            let mut drained = self.partition_spikes.drain(pid_u8);
-            let mut idx = 0usize;
-            while idx < drained.len() && processed < max_spikes {
-                if let Some(sp) = drained.get(idx).copied() {
-                    // Deliver only to synapses whose post lies in this partition
-                    for syn in &mut self.synapses {
-                        if syn.pre_id == sp.source {
-                            if let Some(dst) = self.partition_map.get(syn.post_id) {
-                                if dst == pid_u8 {
-                                    let _ = syn.receive_spike(&sp);
-                                    if self.plastic_enable {
-                                        syn.potentiate(self.plastic_a_plus, self.plastic_w_min, self.plastic_w_max);
-                                    }
-                                    let _ = self.active_list.push_back(syn.post_id);
-                                    processed += 1;
-                                }
-                            }
-                        }
-                    }
-                }
-                idx += 1;
-            }
-            // Re-enqueue any unprocessed spikes
-            while idx < drained.len() {
-    
+
     /// Decay STDP traces for all neurons
     fn decay_traces(&mut self) {
         for trace in &mut self.pre_trace {
@@ -554,30 +572,30 @@ impl<T: FixedPoint> EmbeddedSNN<T> {
             *trace = *trace * self.plastic_alpha_post;
         }
     }
-    
+
     /// Apply STDP weight update based on pre/post traces
     fn apply_stdp(&mut self, pre_id: u16, post_id: u16, synapse_idx: usize) {
         if !self.plastic_enable || synapse_idx >= self.synapses.len() {
             return;
         }
-        
+
         let pre_idx = pre_id as usize;
         let post_idx = post_id as usize;
-        
+
         if pre_idx >= self.pre_trace.len() || post_idx >= self.post_trace.len() {
             return;
         }
-        
+
         // LTD: w -= a_minus * post_trace[post]
         let ltd_amount = self.plastic_a_minus * self.post_trace[post_idx];
-        
-        // LTP: w += a_plus * pre_trace[pre] 
+
+        // LTP: w += a_plus * pre_trace[pre]
         let ltp_amount = self.plastic_a_plus * self.pre_trace[pre_idx];
-        
+
         // Apply weight change
         let synapse = &mut self.synapses[synapse_idx];
         let mut new_weight = synapse.weight - ltd_amount + ltp_amount;
-        
+
         // Clamp to bounds
         if new_weight < self.plastic_w_min {
             new_weight = self.plastic_w_min;
@@ -585,15 +603,41 @@ impl<T: FixedPoint> EmbeddedSNN<T> {
         if new_weight > self.plastic_w_max {
             new_weight = self.plastic_w_max;
         }
-        
+
         synapse.weight = new_weight;
     }
-                if let Some(sp) = drained.get(idx).copied() {
-                    let _ = self.partition_spikes.push(pid_u8, sp);
-                }
-                idx += 1;
-            }
+
+    /// Apply STDP weight update to a specific synapse
+    fn apply_stdp_to_synapse(&self, synapse: &mut crate::embedded_neuron::EmbeddedSynapse<T>, pre_id: u16, post_id: u16) {
+        if !self.plastic_enable {
+            return;
         }
+
+        let pre_idx = pre_id as usize;
+        let post_idx = post_id as usize;
+
+        if pre_idx >= self.pre_trace.len() || post_idx >= self.post_trace.len() {
+            return;
+        }
+
+        // LTD: w -= a_minus * post_trace[post]
+        let ltd_amount = self.plastic_a_minus * self.post_trace[post_idx];
+
+        // LTP: w += a_plus * pre_trace[pre]
+        let ltp_amount = self.plastic_a_plus * self.pre_trace[pre_idx];
+
+        // Apply weight change
+        let mut new_weight = synapse.weight - ltd_amount + ltp_amount;
+
+        // Clamp to bounds
+        if new_weight < self.plastic_w_min {
+            new_weight = self.plastic_w_min;
+        }
+        if new_weight > self.plastic_w_max {
+            new_weight = self.plastic_w_max;
+        }
+
+        synapse.weight = new_weight;
     }
     
     /// Calculate synaptic currents for all neurons
@@ -856,8 +900,9 @@ mod tests {
         let stats = network.get_statistics();
         assert!(stats.memory_usage > 0);
     }
+
     #[test]
-        fn test_plasticity_and_pruning() {
+    fn test_plasticity_and_pruning() {
             // Build minimal 1->1 with small initial weight that should increase
             let mut net = EmbeddedSNN::<Q16_16>::new(Q16_16::from_float(0.001), EmbeddedTopology::Custom);
             // Add two LIF neurons
@@ -884,7 +929,6 @@ mod tests {
             // After pruning pass in update, the very weak synapse should be removed
             assert!(net.synapses.len() <= 1 || net.synapses.iter().any(|s| s.weight > Q16_16::from_float(0.001)));
         }
-    }
 
     #[cfg(feature = "partitioning")]
     #[test]

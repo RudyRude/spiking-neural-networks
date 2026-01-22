@@ -1,6 +1,6 @@
 [package]
 name = "shnn-python"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 authors = ["SHNN Team"]
 description = "Python bindings for the Spiking Hypergraph Neural Network (SHNN) library"
@@ -45,12 +45,12 @@ generate-import-lib = ["pyo3/generate-import-lib"]
 
 [dependencies]
 # Core dependencies
-shnn-core = { path = "../shnn-core", version = "0.1.0" }
-shnn-ffi = { path = "../shnn-ffi", version = "0.1.0" }
-shnn-async = { path = "../shnn-async", version = "0.1.0", optional = true }
-shnn-ir = { path = "../shnn-ir", version = "0.1.0" }
-shnn-compiler = { path = "../shnn-compiler", version = "0.1.0" }
-shnn-cli = { path = "../shnn-cli", version = "0.1.0" }
+shnn-core = { path = "../shnn-core", version = "1.0.0" }
+shnn-ffi = { path = "../shnn-ffi", version = "1.0.0" }
+shnn-async = { path = "../shnn-async", version = "1.0.0", optional = true }
+shnn-ir = { path = "../shnn-ir", version = "1.0.0" }
+shnn-compiler = { path = "../shnn-compiler", version = "1.0.0" }
+shnn-cli = { path = "../shnn-cli", version = "1.0.0" }
 ndfh-core = { path = "../ndfh-core", version = "0.2.0" }
 
 # Python integration
@@ -84,7 +84,7 @@ uuid = { version = "1.0", features = ["v4"] }
 tempfile = "3.8"
 
 [build-dependencies]
-pyo3-build-config = "0.20"
+pyo3-build-config = "0.21"
 
 # Python packaging configuration
 [tool.maturin]
@@ -112,7 +112,7 @@ module = "shnn_python"
 # Python project metadata
 [project]
 name = "shnn-python"
-version = "0.1.0"
+version = "1.0.0"
 description = "Python bindings for Spiking Hypergraph Neural Networks"
 authors = ["SHNN Team <team@shnn-project.org>"]
 license = "MIT OR Apache-2.0"

@@ -1,0 +1,12 @@
+/Users/mpro/august/spiking-neural-networks/backend/target/debug/deps/metrics-ec89394b10eaf54c.d: /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/metrics-0.21.1/src/lib.rs /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/metrics-0.21.1/src/atomics.rs /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/metrics-0.21.1/src/common.rs /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/metrics-0.21.1/src/cow.rs /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/metrics-0.21.1/src/handles.rs /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/metrics-0.21.1/src/key.rs /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/metrics-0.21.1/src/label.rs /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/metrics-0.21.1/src/recorder.rs
+
+/Users/mpro/august/spiking-neural-networks/backend/target/debug/deps/libmetrics-ec89394b10eaf54c.rmeta: /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/metrics-0.21.1/src/lib.rs /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/metrics-0.21.1/src/atomics.rs /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/metrics-0.21.1/src/common.rs /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/metrics-0.21.1/src/cow.rs /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/metrics-0.21.1/src/handles.rs /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/metrics-0.21.1/src/key.rs /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/metrics-0.21.1/src/label.rs /Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/metrics-0.21.1/src/recorder.rs
+
+/Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/metrics-0.21.1/src/lib.rs:
+/Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/metrics-0.21.1/src/atomics.rs:
+/Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/metrics-0.21.1/src/common.rs:
+/Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/metrics-0.21.1/src/cow.rs:
+/Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/metrics-0.21.1/src/handles.rs:
+/Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/metrics-0.21.1/src/key.rs:
+/Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/metrics-0.21.1/src/label.rs:
+/Users/mpro/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/metrics-0.21.1/src/recorder.rs:

@@ -1,6 +1,6 @@
 [package]
 name = "shnn-math"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 authors = ["SHNN Team <team@shnn.ai>"]
 description = "Zero-dependency math library optimized for neuromorphic computations"

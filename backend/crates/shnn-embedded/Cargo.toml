@@ -1,6 +1,6 @@
 [package]
 name = "shnn-embedded"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 authors = ["SHNN Team"]
 description = "Embedded/no-std implementation of Spiking Hypergraph Neural Networks"
@@ -14,7 +14,7 @@ readme = "README.md"
 
 [dependencies]
 # Core SHNN functionality (no-std compatible)
-shnn-core = { version = "0.1.0", path = "../shnn-core", default-features = false }
+shnn-core = { version = "1.0.0", path = "../shnn-core", default-features = false }
 
 # No-std collections and utilities
 heapless = "0.8.0"

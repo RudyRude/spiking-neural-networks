@@ -27,10 +27,23 @@ A high-performance, modular spiking neural network framework with pluggable conn
 - **Leaky Integrate-and-Fire (LIF)**: Simple and efficient for large-scale simulations
 - **Custom Models**: Extensible trait system for implementing new neuron types
 
+#### Neuron Model Breakdowns
+
+**Leaky Integrate-and-Fire (LIF)**: Simplest spiking model balancing efficiency and dynamics. Membrane potential integrates input current with exponential decay. Variants include adaptive versions that model spike-frequency adaptation.
+
+**Izhikevich Model**: Quadratic integrate-and-fire with recovery variable. Reproduces 20+ spiking patterns (regular, bursting, chattering) with minimal parameters. Used for cortical neuron simulation and lattice networks.
+
+**Hodgkin-Huxley Model**: Biophysical gold standard with detailed ion channel kinetics. Models sodium, potassium, and leak currents with voltage-dependent gating. Includes full neurotransmission for synaptic modeling.
+
+#### Kinetics Rationale
+
+HSNN implements neurotransmitter kinetics with biological accuracy while optimizing for performance. Receptor binding uses simplified exponential kinetics (rather than complex Markov chains) to balance detail with speed. Izhikevich models use fixed receptor kinetics to maintain computational efficiency (100x+ speedup vs. full Hodgkin-Huxley) while preserving core synaptic mechanisms. This design enables large-scale cognitive simulations without sacrificing essential biological plausibility.
+
 ### 🏗️ **Network Architectures**
 - **Lattice Networks**: 2D grid structures with local connectivity
 - **Hypergraph Networks**: Advanced connectivity with hierarchical structures
 - **Multi-Population Networks**: Interconnected neural populations
+- **Digital Twin Framework**: Modular brain regions (cortex, hippocampus, LSM) with inter-connectivity
 - **Custom Topologies**: Flexible graph-based connectivity
 
 ### ⚡ **Synaptic Dynamics**
@@ -241,6 +254,7 @@ For detailed troubleshooting, see [INSTALL.md](INSTALL.md).
 
 - **Neuroscience Research**: Neural dynamics, synaptic plasticity, neural coding
 - **Cognitive Modeling**: Memory systems, spatial navigation, decision making
+- **Machine Learning**: STDP-based classifiers, R-STDP regressors, LSM-based cognition
 - **Neuromorphic Computing**: Hardware acceleration, energy-efficient computing
 - **AI Research**: Spiking neural networks, brain-inspired algorithms
 - **Robotics**: Sensory processing, motor control, adaptive behavior

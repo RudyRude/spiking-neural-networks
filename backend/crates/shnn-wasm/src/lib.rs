@@ -48,6 +48,7 @@ use shnn_core::{
 };
 
 use serde::{Deserialize, Serialize};
+use serde_wasm_bindgen;
 use std::collections::HashMap;
 
 // Global allocator for WASM
@@ -368,7 +369,7 @@ impl NeuralNetwork {
         // Convert to JavaScript Array
         let js_array = Array::new();
         for spike in output_spikes {
-            js_array.push(&JsValue::from_serde(&spike).unwrap());
+            js_array.push(&serde_wasm_bindgen::to_value(&spike).unwrap());
         }
         
         Ok(js_array)
@@ -381,7 +382,7 @@ impl NeuralNetwork {
         
         for i in 0..spikes.length() {
             let js_spike = spikes.get(i);
-            let spike: Spike = js_spike.into_serde().map_err(|_| WasmError {
+            let spike: Spike = serde_wasm_bindgen::from_value(js_spike).map_err(|_| WasmError {
                 message: "Failed to deserialize spike".to_string(),
             })?;
             
@@ -428,7 +429,7 @@ impl NeuralNetwork {
     pub fn spike_history(&self) -> Array {
         let js_array = Array::new();
         for spike in &self.spike_history {
-            js_array.push(&JsValue::from_serde(spike).unwrap());
+            js_array.push(&serde_wasm_bindgen::to_value(spike).unwrap());
         }
         js_array
     }
@@ -456,8 +457,8 @@ impl NeuralNetwork {
             current_time: self.current_time,
             spike_count: self.spike_history.len(),
         };
-        
-        JsValue::from_serde(&stats).unwrap()
+
+        serde_wasm_bindgen::to_value(&stats).unwrap()
     }
 }
 
@@ -528,7 +529,7 @@ impl SpikeEncoder {
             let spikes = train.to_spikes().map_err(|e| WasmError::from(e))?;
             for spike in spikes {
                 let wasm_spike = Spike::from_core(&spike);
-                js_array.push(&JsValue::from_serde(&wasm_spike).unwrap());
+                js_array.push(&serde_wasm_bindgen::to_value(&wasm_spike).unwrap());
             }
         }
         

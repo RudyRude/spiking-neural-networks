@@ -439,8 +439,7 @@ mod tests {
         let spike = Spike::new(NeuronId::new(0), Time::from_millis(10), 1.0)
             .expect("Should create valid spike");
         
-        let routes = network.route_spike(&spike, Time::from_millis(10))
-            .expect("Should route spike");
+        let routes = network.route_spike(&spike, Time::from_millis(10));
         
         assert_eq!(routes.len(), 1);
         assert_eq!(routes[0].targets, targets);

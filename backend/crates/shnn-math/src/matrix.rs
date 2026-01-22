@@ -91,6 +91,15 @@ impl Matrix {
     pub fn shape(&self) -> (usize, usize) {
         (self.rows, self.cols)
     }
+
+    /// Create matrix filled with a specific value
+    pub fn filled(rows: usize, cols: usize, value: Float) -> Self {
+        Self {
+            data: vec![value; rows * cols],
+            rows,
+            cols,
+        }
+    }
     
     /// Get number of rows
     pub fn rows(&self) -> usize {
@@ -197,6 +206,46 @@ impl Matrix {
         Ok(result)
     }
     
+    /// Matrix multiplication
+    pub fn mul_matrix(&self, other: &Matrix) -> Result<Matrix> {
+        if self.cols != other.rows {
+            return Err(MathError::DimensionMismatch {
+                expected: self.cols,
+                got: other.rows,
+            });
+        }
+
+        let mut result = Matrix::zeros(self.rows, other.cols);
+        for i in 0..self.rows {
+            for j in 0..other.cols {
+                for k in 0..self.cols {
+                    result[(i, j)] += self[(i, k)] * other[(k, j)];
+                }
+            }
+        }
+
+        Ok(result)
+    }
+
+    /// Alias for multiply_vector - matrix-vector multiplication
+    pub fn mul_vec(&self, vec: &[Float]) -> Result<Vec<Float>> {
+        self.multiply_vector(vec)
+    }
+
+    /// Get a specific row as a vector
+    pub fn get_row(&self, row_idx: usize) -> Result<Vec<Float>> {
+        if row_idx >= self.rows {
+            return Err(MathError::IndexOutOfBounds {
+                index: row_idx,
+                len: self.rows,
+            });
+        }
+
+        let start = row_idx * self.cols;
+        let end = start + self.cols;
+        Ok(self.data[start..end].to_vec())
+    }
+
     /// Matrix-vector multiplication
     pub fn multiply_vector(&self, vec: &[Float]) -> Result<Vec<Float>> {
         if self.cols != vec.len() {

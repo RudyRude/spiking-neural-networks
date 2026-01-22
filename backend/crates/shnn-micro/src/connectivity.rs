@@ -512,18 +512,18 @@ mod tests {
     #[test]
     fn test_outgoing_connections() {
         let mut connectivity: Connectivity<16> = Connectivity::new();
-        
+
         let source = NeuronId::new(0);
         let target1 = NeuronId::new(1);
         let target2 = NeuronId::new(2);
-        
+
         connectivity.add_connection(Connection::new(source, target1, Scalar::from_float(0.5))).unwrap();
         connectivity.add_connection(Connection::new(source, target2, Scalar::from_float(0.3))).unwrap();
         connectivity.add_connection(Connection::new(NeuronId::new(3), target1, Scalar::from_float(0.2))).unwrap();
-        
-        let outgoing: Vec<_> = connectivity.get_outgoing(source).collect();
+
+        let outgoing: heapless::Vec<_, 16> = connectivity.get_outgoing(source).collect();
         assert_eq!(outgoing.len(), 2);
-        
+
         for conn in outgoing {
             assert_eq!(conn.source, source);
             assert!(conn.target == target1 || conn.target == target2);

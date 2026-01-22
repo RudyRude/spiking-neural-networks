@@ -858,7 +858,7 @@ mod tests {
         
         let weight = network.get_weight(source, target)
             .expect("Should get weight");
-        assert_eq!(weight, Some(0.5));
+        assert_eq!(weight, 0.5);
         
         let new_weight = network.apply_plasticity(source, target, 0.2)
             .expect("Should apply plasticity");
@@ -887,6 +887,6 @@ mod tests {
         assert_eq!(applied, 1);
 
         let new_w = net.get_weight(pre, post).unwrap();
-        assert_eq!(new_w, Some(0.95));
+        assert_eq!(new_w, 0.95);
     }
 }

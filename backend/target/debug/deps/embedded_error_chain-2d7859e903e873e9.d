@@ -1,0 +1,9 @@
+/Users/mpro/august/spiking-neural-networks/backend/target/debug/deps/libembedded_error_chain-2d7859e903e873e9.rmeta: /Users/mpro/.cargo/registry/src/index.crates.io-6f17d22bba15001f/embedded-error-chain-0.1.1/src/lib.rs /Users/mpro/.cargo/registry/src/index.crates.io-6f17d22bba15001f/embedded-error-chain-0.1.1/src/error.rs /Users/mpro/.cargo/registry/src/index.crates.io-6f17d22bba15001f/embedded-error-chain-0.1.1/src/error_category.rs /Users/mpro/.cargo/registry/src/index.crates.io-6f17d22bba15001f/embedded-error-chain-0.1.1/src/error_data.rs /Users/mpro/.cargo/registry/src/index.crates.io-6f17d22bba15001f/embedded-error-chain-0.1.1/src/utils.rs
+
+/Users/mpro/august/spiking-neural-networks/backend/target/debug/deps/embedded_error_chain-2d7859e903e873e9.d: /Users/mpro/.cargo/registry/src/index.crates.io-6f17d22bba15001f/embedded-error-chain-0.1.1/src/lib.rs /Users/mpro/.cargo/registry/src/index.crates.io-6f17d22bba15001f/embedded-error-chain-0.1.1/src/error.rs /Users/mpro/.cargo/registry/src/index.crates.io-6f17d22bba15001f/embedded-error-chain-0.1.1/src/error_category.rs /Users/mpro/.cargo/registry/src/index.crates.io-6f17d22bba15001f/embedded-error-chain-0.1.1/src/error_data.rs /Users/mpro/.cargo/registry/src/index.crates.io-6f17d22bba15001f/embedded-error-chain-0.1.1/src/utils.rs
+
+/Users/mpro/.cargo/registry/src/index.crates.io-6f17d22bba15001f/embedded-error-chain-0.1.1/src/lib.rs:
+/Users/mpro/.cargo/registry/src/index.crates.io-6f17d22bba15001f/embedded-error-chain-0.1.1/src/error.rs:
+/Users/mpro/.cargo/registry/src/index.crates.io-6f17d22bba15001f/embedded-error-chain-0.1.1/src/error_category.rs:
+/Users/mpro/.cargo/registry/src/index.crates.io-6f17d22bba15001f/embedded-error-chain-0.1.1/src/error_data.rs:
+/Users/mpro/.cargo/registry/src/index.crates.io-6f17d22bba15001f/embedded-error-chain-0.1.1/src/utils.rs:

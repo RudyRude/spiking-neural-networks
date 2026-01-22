@@ -34,7 +34,7 @@ pub mod proto;
 // Re-exports for convenience
 pub use binary::{BinaryEncoder, BinaryDecoder};
 pub use buffer::{Buffer, BufferMut, ZeroCopyBuffer};
-pub use traits::{Serialize, Deserialize, SerializeSize, ZeroCopySerialize};
+pub use traits::{Serialize, Deserialize, ZeroCopySerialize};
 pub use neural::{
     SpikeEvent, WeightMatrix, LayerState, NeuralSerializer,
     SpikeEventCodec, WeightMatrixCodec
@@ -184,6 +184,11 @@ pub mod utils {
         } else {
             Err(SerializeError::VersionMismatch)
         }
+    }
+
+    /// Calculate padding needed for alignment
+    pub fn padding_needed(current_offset: usize, alignment: usize) -> usize {
+        (alignment - (current_offset % alignment)) % alignment
     }
 }
 

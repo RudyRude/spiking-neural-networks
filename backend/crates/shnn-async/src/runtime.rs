@@ -352,7 +352,7 @@ impl AsyncRuntime for AsyncStdRuntime {
 
 /// Runtime manager that selects appropriate runtime based on features
 pub struct RuntimeManager {
-    runtime: Box<dyn AsyncRuntime>,
+    runtime: TokioRuntime,
     config: RuntimeConfig,
 }
 
@@ -369,11 +369,11 @@ impl RuntimeManager {
     }
     
     /// Create runtime based on available features
-    fn create_runtime(config: RuntimeConfig) -> AsyncResult<Box<dyn AsyncRuntime>> {
+    fn create_runtime(config: RuntimeConfig) -> AsyncResult<TokioRuntime> {
         #[cfg(feature = "tokio-runtime")]
         {
             let runtime = TokioRuntime::new(config)?;
-            return Ok(Box::new(runtime));
+            return Ok(runtime);
         }
         
         #[cfg(all(feature = "async-std-runtime", not(feature = "tokio-runtime")))]
@@ -389,8 +389,8 @@ impl RuntimeManager {
     }
     
     /// Get runtime reference
-    pub fn runtime(&self) -> &dyn AsyncRuntime {
-        self.runtime.as_ref()
+    pub fn runtime(&self) -> &TokioRuntime {
+        &self.runtime
     }
     
     /// Get configuration

@@ -51,7 +51,7 @@ pub enum ExecutionResult {
 /// Task scheduler with spike event priority
 pub struct TaskScheduler {
     /// High-priority queues for different priority levels
-    priority_queues: [LockFreeQueue<TaskId>; 4],
+    priority_queues: [LockFreeQueue<TaskId>; 6],
     /// Global task storage (simplified for now)
     pending_count: AtomicUsize,
     /// Statistics counters
@@ -65,10 +65,12 @@ impl TaskScheduler {
     pub fn new_with_priorities() -> Self {
         Self {
             priority_queues: [
+                LockFreeQueue::with_capacity(1024),  // High
                 LockFreeQueue::with_capacity(1024),  // Spike
                 LockFreeQueue::with_capacity(1024),  // Neural
                 LockFreeQueue::with_capacity(2048),  // Normal
                 LockFreeQueue::with_capacity(512),   // Background
+                LockFreeQueue::with_capacity(512),   // Low
             ],
             pending_count: AtomicUsize::new(0),
             stats: SchedulerStats::new(),
@@ -246,10 +248,12 @@ impl RealtimeSchedulingPolicy {
     /// Get time quantum for priority level
     pub fn time_quantum_for_priority(&self, priority: TaskPriority) -> SpikeTime {
         match priority {
+            TaskPriority::High => self.time_quantum, // Full quantum for high priority
             TaskPriority::Spike => self.time_quantum, // Full quantum for spike tasks
             TaskPriority::Neural => SpikeTime::from_nanos(self.time_quantum.as_nanos() * 3 / 4),
             TaskPriority::Normal => SpikeTime::from_nanos(self.time_quantum.as_nanos() / 2),
             TaskPriority::Background => SpikeTime::from_nanos(self.time_quantum.as_nanos() / 4),
+            TaskPriority::Low => SpikeTime::from_nanos(self.time_quantum.as_nanos() / 4), // Same as background
         }
     }
 }

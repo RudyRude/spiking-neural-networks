@@ -36,42 +36,54 @@ pub trait NeurotransmitterTypeGPU: NeurotransmitterType + PartialOrd + Ord {
     fn to_string(&self) -> String;
 }
 
-/// Available neurotransmitter types for ionotropic receptor ligand gated channels
+/// Available neurotransmitter types including ionotropic and metabotropic
 #[derive(Hash, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug)]
-pub enum IonotropicReceptorNeurotransmitterType {
-    /// Neurotransmitter type that effects only AMPA receptors
+pub enum NeurotransmitterType {
+    /// Ionotropic neurotransmitter type that effects only AMPA receptors
     AMPA,
-    /// Neurotransmitter type that effects only NMDA receptors
+    /// Ionotropic neurotransmitter type that effects only NMDA receptors
     NMDA,
-    /// Neurotransmitter type that effects only GABAa receptors
+    /// Ionotropic neurotransmitter type that effects only GABAa receptors
     GABAa,
-    /// Neurotransmitter type that effects only GABAb receptors
+    /// Ionotropic neurotransmitter type that effects only GABAb receptors
     GABAb,
+    /// Metabotropic neurotransmitter: dopamine, concentration-based effects
+    Dopamine,
+    /// Metabotropic neurotransmitter: serotonin, concentration-based effects
+    Serotonin,
+    /// Glutamate: used in tripartite synapses, astrocyte modulation
+    Glutamate,
 }
 
-impl NeurotransmitterType for IonotropicReceptorNeurotransmitterType {}
+impl NeurotransmitterType for NeurotransmitterType {}
 
 #[cfg(feature = "gpu")]
-impl NeurotransmitterTypeGPU for IonotropicReceptorNeurotransmitterType {
+impl NeurotransmitterTypeGPU for NeurotransmitterType {
     fn type_to_numeric(&self) -> usize {
         match &self {
-            IonotropicReceptorNeurotransmitterType::AMPA => 0,
-            IonotropicReceptorNeurotransmitterType::NMDA => 1,
-            IonotropicReceptorNeurotransmitterType::GABAa => 2,
-            IonotropicReceptorNeurotransmitterType::GABAb => 3,
+            NeurotransmitterType::AMPA => 0,
+            NeurotransmitterType::NMDA => 1,
+            NeurotransmitterType::GABAa => 2,
+            NeurotransmitterType::GABAb => 3,
+            NeurotransmitterType::Dopamine => 4,
+            NeurotransmitterType::Serotonin => 5,
+            NeurotransmitterType::Glutamate => 6,
         }
     }
 
     fn number_of_types() -> usize {
-        4
+        7
     }
 
     fn get_all_types() -> BTreeSet<Self> {
         BTreeSet::from([
-            IonotropicReceptorNeurotransmitterType::AMPA,
-            IonotropicReceptorNeurotransmitterType::NMDA,
-            IonotropicReceptorNeurotransmitterType::GABAa,
-            IonotropicReceptorNeurotransmitterType::GABAb,
+            NeurotransmitterType::AMPA,
+            NeurotransmitterType::NMDA,
+            NeurotransmitterType::GABAa,
+            NeurotransmitterType::GABAb,
+            NeurotransmitterType::Dopamine,
+            NeurotransmitterType::Serotonin,
+            NeurotransmitterType::Glutamate,
         ])
     }
 
@@ -80,17 +92,24 @@ impl NeurotransmitterTypeGPU for IonotropicReceptorNeurotransmitterType {
     }
 }
 
-impl IonotropicReceptorNeurotransmitterType {
+impl NeurotransmitterType {
     /// Converts type to string
     pub fn to_str(&self) -> &str {
         match self {
-            IonotropicReceptorNeurotransmitterType::AMPA => "AMPA",
-            IonotropicReceptorNeurotransmitterType::GABAa => "GABAa",
-            IonotropicReceptorNeurotransmitterType::GABAb => "GABAb",
-            IonotropicReceptorNeurotransmitterType::NMDA => "NMDA",
+            NeurotransmitterType::AMPA => "AMPA",
+            NeurotransmitterType::GABAa => "GABAa",
+            NeurotransmitterType::GABAb => "GABAb",
+            NeurotransmitterType::NMDA => "NMDA",
+            NeurotransmitterType::Dopamine => "Dopamine",
+            NeurotransmitterType::Serotonin => "Serotonin",
+            NeurotransmitterType::Glutamate => "Glutamate",
         }
     }
 }
+
+/// Type alias for backwards compatibility
+pub type IonotropicReceptorNeurotransmitterType = NeurotransmitterType;
+pub type IonotropicNeurotransmitterType = NeurotransmitterType;
 
 /// Calculates neurotransmitter concentration over time based on voltage of neuron
 pub trait NeurotransmitterKinetics: Clone + Send + Sync {

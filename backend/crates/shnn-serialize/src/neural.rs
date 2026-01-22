@@ -32,25 +32,20 @@ pub struct SpikeEvent {
 impl ZeroCopySerialize for SpikeEvent {}
 
 impl Serialize for SpikeEvent {
-    fn serialize(&self, buffer: &mut [u8]) -> Result<usize> {
-        if buffer.len() < self.serialized_size() {
-            return Err(SerializeError::BufferTooSmall);
-        }
-        
+    fn serialize(&self, encoder: &mut BinaryEncoder) -> Result<()> {
         let bytes = self.as_bytes();
-        buffer[..bytes.len()].copy_from_slice(bytes);
-        Ok(bytes.len())
+        encoder.buffer.write_bytes(bytes)
     }
-    
+
     fn serialized_size(&self) -> usize {
         core::mem::size_of::<Self>()
     }
 }
 
-impl<'a> Deserialize<'a> for SpikeEvent {
-    fn deserialize(buffer: &'a [u8]) -> Result<Self> {
-        let spike_ref = Self::from_bytes(buffer)?;
-        Ok(*spike_ref)
+impl Deserialize for SpikeEvent {
+    fn deserialize(decoder: &mut BinaryDecoder) -> Result<Self> {
+        let slice: &[SpikeEvent] = decoder.buffer.read_slice(1)?;
+        Ok(slice[0])
     }
 }
 
@@ -106,42 +101,44 @@ impl WeightMatrix {
 }
 
 impl Serialize for WeightMatrix {
-    fn serialize(&self, buffer: &mut [u8]) -> Result<usize> {
-        let mut encoder = BinaryEncoder::new(BufferMut::new(buffer));
-        
+    fn serialize(&self, encoder: &mut BinaryEncoder) -> Result<()> {
         // Write shape
-        encoder.encode(&self.shape.0)?;
-        encoder.encode(&self.shape.1)?;
-        
+        encoder.buffer.write_u32(self.shape.0)?;
+        encoder.buffer.write_u32(self.shape.1)?;
+
         // Write learning rate
-        encoder.encode(&self.learning_rate)?;
-        
+        encoder.buffer.write_f32(self.learning_rate)?;
+
         // Write weights
-        encoder.encode_slice(&self.weights)?;
-        
-        Ok(encoder.position())
+        encoder.buffer.write_u32(self.weights.len() as u32)?;
+        for &val in &self.weights {
+            encoder.buffer.write_f32(val)?;
+        }
+
+        Ok(())
     }
-    
+
     fn serialized_size(&self) -> usize {
         4 + 4 + 4 + 4 + (self.weights.len() * 4) // shape + lr + len + weights
     }
 }
 
-impl<'a> Deserialize<'a> for WeightMatrix {
-    fn deserialize(buffer: &'a [u8]) -> Result<Self> {
-        let mut decoder = BinaryDecoder::new(Buffer::new(buffer));
-        
+impl Deserialize for WeightMatrix {
+    fn deserialize(decoder: &mut BinaryDecoder) -> Result<Self> {
         // Read shape
-        let rows: u32 = decoder.decode()?;
-        let cols: u32 = decoder.decode()?;
-        
+        let rows = decoder.buffer.read_u32()?;
+        let cols = decoder.buffer.read_u32()?;
+
         // Read learning rate
-        let learning_rate: f32 = decoder.decode()?;
-        
+        let learning_rate = decoder.buffer.read_f32()?;
+
         // Read weights
-        let weights_slice: &[f32] = decoder.decode_slice()?;
-        let weights = weights_slice.to_vec();
-        
+        let len = decoder.buffer.read_u32()? as usize;
+        let mut weights = Vec::new();
+        for _ in 0..len {
+            weights.push(decoder.buffer.read_f32()?);
+        }
+
         Ok(Self {
             shape: (rows, cols),
             weights,
@@ -194,27 +191,34 @@ impl LayerState {
 }
 
 impl Serialize for LayerState {
-    fn serialize(&self, buffer: &mut [u8]) -> Result<usize> {
-        let mut encoder = BinaryEncoder::new(BufferMut::new(buffer));
-        
+    fn serialize(&self, encoder: &mut BinaryEncoder) -> Result<()> {
         // Write layer ID
-        encoder.encode(&self.layer_id)?;
-        
+        encoder.buffer.write_u32(self.layer_id)?;
+
         // Write last update time
-        encoder.encode(&self.last_update)?;
-        
+        encoder.buffer.write_f32(self.last_update)?;
+
         // Write potentials
-        encoder.encode_slice(&self.potentials)?;
-        
-        // Write activations  
-        encoder.encode_slice(&self.activations)?;
-        
+        encoder.buffer.write_u32(self.potentials.len() as u32)?;
+        for &val in &self.potentials {
+            encoder.buffer.write_f32(val)?;
+        }
+
+        // Write activations
+        encoder.buffer.write_u32(self.activations.len() as u32)?;
+        for &val in &self.activations {
+            encoder.buffer.write_f32(val)?;
+        }
+
         // Write spike history
-        encoder.encode_slice(&self.spike_history)?;
-        
-        Ok(encoder.position())
+        encoder.buffer.write_u32(self.spike_history.len() as u32)?;
+        for spike in &self.spike_history {
+            spike.serialize(encoder)?;
+        }
+
+        Ok(())
     }
-    
+
     fn serialized_size(&self) -> usize {
         4 + 4 + // layer_id + last_update
         4 + (self.potentials.len() * 4) + // potentials
@@ -223,28 +227,35 @@ impl Serialize for LayerState {
     }
 }
 
-impl<'a> Deserialize<'a> for LayerState {
-    fn deserialize(buffer: &'a [u8]) -> Result<Self> {
-        let mut decoder = BinaryDecoder::new(Buffer::new(buffer));
-        
+impl Deserialize for LayerState {
+    fn deserialize(decoder: &mut BinaryDecoder) -> Result<Self> {
         // Read layer ID
-        let layer_id: u32 = decoder.decode()?;
-        
+        let layer_id = decoder.buffer.read_u32()?;
+
         // Read last update time
-        let last_update: f32 = decoder.decode()?;
-        
+        let last_update = decoder.buffer.read_f32()?;
+
         // Read potentials
-        let potentials_slice: &[f32] = decoder.decode_slice()?;
-        let potentials = potentials_slice.to_vec();
-        
+        let potentials_len = decoder.buffer.read_u32()? as usize;
+        let mut potentials = Vec::new();
+        for _ in 0..potentials_len {
+            potentials.push(decoder.buffer.read_f32()?);
+        }
+
         // Read activations
-        let activations_slice: &[f32] = decoder.decode_slice()?;
-        let activations = activations_slice.to_vec();
-        
+        let activations_len = decoder.buffer.read_u32()? as usize;
+        let mut activations = Vec::new();
+        for _ in 0..activations_len {
+            activations.push(decoder.buffer.read_f32()?);
+        }
+
         // Read spike history
-        let spike_history_slice: &[SpikeEvent] = decoder.decode_slice()?;
-        let spike_history = spike_history_slice.to_vec();
-        
+        let spike_history_len = decoder.buffer.read_u32()? as usize;
+        let mut spike_history = Vec::new();
+        for _ in 0..spike_history_len {
+            spike_history.push(SpikeEvent::deserialize(decoder)?);
+        }
+
         Ok(Self {
             layer_id,
             potentials,
@@ -557,9 +568,11 @@ mod tests {
         };
 
         let mut buffer = [0u8; 64];
-        let size = spike.serialize(&mut buffer).unwrap();
+        let mut encoder = BinaryEncoder::new(BufferMut::new(&mut buffer));
+        spike.serialize(&mut encoder).unwrap();
         
-        let deserialized = SpikeEvent::deserialize(&buffer[..size]).unwrap();
+        let mut decoder = BinaryDecoder::new(Buffer::new(encoder.written()));
+        let deserialized = SpikeEvent::deserialize(&mut decoder).unwrap();
         assert_eq!(spike, deserialized);
     }
 
@@ -569,10 +582,12 @@ mod tests {
         matrix.set(1, 2, 0.5).unwrap();
         matrix.learning_rate = 0.02;
 
-        let mut buffer = vec![0u8; matrix.serialized_size()];
-        let size = matrix.serialize(&mut buffer).unwrap();
+        let mut buffer = vec![0u8; matrix.serialized_size() + 8]; // extra for header
+        let mut encoder = BinaryEncoder::new(BufferMut::new(&mut buffer));
+        matrix.serialize(&mut encoder).unwrap();
         
-        let deserialized = WeightMatrix::deserialize(&buffer[..size]).unwrap();
+        let mut decoder = BinaryDecoder::new(Buffer::new(encoder.written()));
+        let deserialized = WeightMatrix::deserialize(&mut decoder).unwrap();
         assert_eq!(matrix.shape, deserialized.shape);
         assert_eq!(matrix.learning_rate, deserialized.learning_rate);
         assert_eq!(matrix.get(1, 2).unwrap(), deserialized.get(1, 2).unwrap());
@@ -590,10 +605,12 @@ mod tests {
             reserved: 0,
         });
 
-        let mut buffer = vec![0u8; layer.serialized_size()];
-        let size = layer.serialize(&mut buffer).unwrap();
+        let mut buffer = vec![0u8; layer.serialized_size() + 8];
+        let mut encoder = BinaryEncoder::new(BufferMut::new(&mut buffer));
+        layer.serialize(&mut encoder).unwrap();
         
-        let deserialized = LayerState::deserialize(&buffer[..size]).unwrap();
+        let mut decoder = BinaryDecoder::new(Buffer::new(encoder.written()));
+        let deserialized = LayerState::deserialize(&mut decoder).unwrap();
         assert_eq!(layer.layer_id, deserialized.layer_id);
         assert_eq!(layer.potentials[50], deserialized.potentials[50]);
         assert_eq!(layer.spike_history.len(), deserialized.spike_history.len());

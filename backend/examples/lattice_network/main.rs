@@ -59,7 +59,7 @@ fn main() -> Result<(), SpikingNeuralNetworksError> {
     
     network.run_lattices(iterations)?;
 
-    let mut voltage_file = BufWriter::new(File::create("lattice_network_history.txt")
+    let mut voltage_file = BufWriter::with_capacity(8 * 1024 * 1024, File::create("lattice_network_history.txt")
         .expect("Could not create file"));
 
     for grid in &network.get_lattice(&1).unwrap().grid_history.history {
@@ -75,7 +75,7 @@ fn main() -> Result<(), SpikingNeuralNetworksError> {
             .expect("Could not write to file"); 
     }
 
-    let mut spike_train_file = BufWriter::new(File::create("spike_train_history.txt")
+    let mut spike_train_file = BufWriter::with_capacity(8 * 1024 * 1024, File::create("spike_train_history.txt")
         .expect("Could not create file"));
 
     for grid in &network.get_spike_train_lattice(&0).unwrap().grid_history.history {

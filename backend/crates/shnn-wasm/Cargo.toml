@@ -1,6 +1,6 @@
 [package]
 name = "shnn-wasm"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 authors = ["SHNN Team"]
 description = "WebAssembly bindings for Spiking Hypergraph Neural Networks"
@@ -17,7 +17,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 # Core SHNN functionality
-ndfh-core = { version = "0.2.0", path = "../ndfh-core", default-features = false }
+shnn-core = { path = "../shnn-core", default-features = false }
 
 # WASM-specific dependencies
 wasm-bindgen = "0.2.89"

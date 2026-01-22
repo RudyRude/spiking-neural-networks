@@ -33,6 +33,8 @@
 #![deny(missing_docs)]
 #![warn(clippy::all)]
 #![cfg_attr(feature = "simd-advanced", feature(portable_simd))]
+#![feature(const_trait_impl)]
+#![feature(const_cmp)]
 
 // Core modules
 pub mod neuron;
@@ -52,7 +54,7 @@ pub mod rtic;
 // Re-export core types
 pub use crate::{
     neuron::{LIFNeuron, NeuronState, NeuronConfig},
-    connectivity::{BasicConnectivity, SparseConnectivity},
+    connectivity::BasicConnectivity,
     fixed_point::{FixedPoint, Q15_16},
     network::{MicroNetwork, NetworkConfig, ProcessingResult},
     time::{MicroTime, Duration},
@@ -150,8 +152,7 @@ fn panic(_info: &core::panic::PanicInfo) -> ! {
 }
 
 /// Global allocator is disabled (no heap allocation)
-#[cfg(all(not(test), not(feature = "std")))]
-extern crate linked_list_allocator;
+// extern crate linked_list_allocator; // Not used in std builds
 
 /// Critical section implementation for interrupt safety
 #[cfg(feature = "rtic-support")]

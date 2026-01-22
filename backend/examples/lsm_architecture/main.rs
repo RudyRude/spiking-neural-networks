@@ -157,7 +157,7 @@ fn main() -> Result<(), SpikingNeuralNetworksError> {
 
     env.run_with_reward(10000)?;
 
-    let mut weights_file = BufWriter::new(File::create("weights.txt").expect("Could not create file"));
+    let mut weights_file = BufWriter::with_capacity(8 * 1024 * 1024, File::create("weights.txt").expect("Could not create file"));
 
     for matrix in &env.agent.get_reward_modulated_lattice(&2).unwrap().graph.history {
         for row in matrix {
@@ -174,7 +174,7 @@ fn main() -> Result<(), SpikingNeuralNetworksError> {
         writeln!(weights_file, "-----").expect("Could not write to file");
     }
 
-    let mut voltage_file = BufWriter::new(File::create("voltage.txt").expect("Could not create file"));
+    let mut voltage_file = BufWriter::with_capacity(8 * 1024 * 1024, File::create("voltage.txt").expect("Could not create file"));
 
     for matrix in &env.agent.get_reward_modulated_lattice(&2).unwrap().grid_history.history {
         for row in matrix {

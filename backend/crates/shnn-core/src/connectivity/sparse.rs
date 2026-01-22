@@ -776,10 +776,10 @@ mod tests {
         
         assert_eq!(network.neuron_count(), 2);
         assert_eq!(network.connection_count(), 1);
-        
+
         let weight = network.get_weight(neuron1, neuron2).expect("Should get weight");
         assert_eq!(weight, Some(0.5));
-        
+
         assert!(network.sparsity() > 0.99); // Very sparse
     }
     
@@ -831,7 +831,7 @@ mod tests {
         let weight = network.get_weight(source, target)
             .expect("Should get weight");
         assert_eq!(weight, Some(0.5));
-        
+
         let new_weight = network.apply_plasticity(source, target, 0.2)
             .expect("Should apply plasticity");
         assert_eq!(new_weight, Some(0.7));

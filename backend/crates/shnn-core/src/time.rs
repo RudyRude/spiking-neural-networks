@@ -313,6 +313,13 @@ impl From<Time> for Duration {
     }
 }
 
+#[cfg(feature = "std")]
+impl From<Duration> for std::time::Duration {
+    fn from(duration: Duration) -> Self {
+        std::time::Duration::from_nanos(duration.0)
+    }
+}
+
 /// Discrete time step for simulation
 pub type TimeStep = u64;
 

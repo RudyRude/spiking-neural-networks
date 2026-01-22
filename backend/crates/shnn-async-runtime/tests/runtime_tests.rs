@@ -190,18 +190,18 @@ fn test_spike_event_queue() {
     // Test basic push/pop
     let spike_time = SpikeTime::from_millis(100);
     assert!(queue.push(spike_time).is_ok());
-    
+
     let popped = queue.pop();
     assert!(popped.is_some());
     assert_eq!(popped.unwrap(), spike_time);
-    
+
     // Test queue full behavior
     for i in 0..1024 {
-        assert!(queue.push(SpikeTime::from_millis(i as f64)).is_ok());
+        assert!(queue.push(SpikeTime::from_millis(i as u64)).is_ok());
     }
-    
+
     // Should be full now
-    assert!(queue.push(SpikeTime::from_millis(9999.0)).is_err());
+    assert!(queue.push(SpikeTime::from_millis(9999)).is_err());
 }
 
 /// Test concurrent access to spike event queue
@@ -219,7 +219,7 @@ fn test_concurrent_spike_queue() {
         let push_count_clone = push_count.clone();
         let handle = thread::spawn(move || {
             for j in 0..100 {
-                let spike_time = SpikeTime::from_millis((i * 100 + j) as f64);
+                let spike_time = SpikeTime::from_millis((i * 100 + j) as u64);
                 if queue_clone.push(spike_time).is_ok() {
                     push_count_clone.fetch_add(1, Ordering::SeqCst);
                 }
@@ -276,7 +276,6 @@ fn test_runtime_performance() {
                 sum += i;
             }
             completed_clone.fetch_add(1, Ordering::SeqCst);
-            sum
         }, TaskPriority::Normal);
         handles.push(handle);
     }
@@ -319,7 +318,7 @@ fn test_error_handling() {
     
     // Queue should be full or near full, but runtime should handle it gracefully
     let final_handle = runtime.spawn_task(async move {
-        42
+        // Do nothing
     }, TaskPriority::High);
     
     // Release all waiting tasks
@@ -346,20 +345,20 @@ fn test_error_handling() {
 /// Test SpikeTime functionality
 #[test]
 fn test_spike_time() {
-    let t1 = SpikeTime::from_millis(100.0);
-    let t2 = SpikeTime::from_millis(200.0);
+    let t1 = SpikeTime::from_millis(100);
+    let t2 = SpikeTime::from_millis(200);
     let t3 = SpikeTime::from_nanos(150_000_000); // 150ms
-    
+
     assert!(t1 < t2);
     assert!(t1 < t3);
     assert!(t3 < t2);
-    
-    assert_eq!(t1.as_millis(), 100.0);
+
+    assert_eq!(t1.as_millis(), 100);
     assert_eq!(t2.as_nanos(), 200_000_000);
-    
+
     // Test arithmetic
     let sum = t1 + Duration::from_millis(50);
-    assert_eq!(sum.as_millis(), 150.0);
+    assert_eq!(sum.as_millis(), 150);
 }
 
 /// Test memory safety under concurrent access
@@ -376,7 +375,8 @@ fn test_memory_safety() {
             
             for task_id in 0..50 {
                 let task_handle = runtime_clone.spawn_task(async move {
-                    thread_id * 50 + task_id
+                    // Do work
+                    let _ = thread_id * 50 + task_id;
                 }, TaskPriority::Normal);
                 task_handles.push(task_handle);
             }
